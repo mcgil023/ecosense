@@ -5,3 +5,4 @@ pandas
 scikit-learn==1.6.1
 google-generativeai
 gunicorn
+requests
