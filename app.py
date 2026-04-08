@@ -8,7 +8,7 @@ from collections import deque
 
 import google.generativeai as genai
 
-GEMINI_API_KEY = "AIzaSyBe7QscC_0ZBvf6Hn9pVzKWGkZPhiPSHG0"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_ready = False
 gemini_model = None
 try:
