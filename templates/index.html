@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoSense — Smart Farming</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<!-- ALERT BANNER -->
+<div id="alert-banner" class="alert-banner hidden"></div>
+
+<!-- HEADER -->
+<header class="top-bar">
+  <div class="logo">🌱 EcoSense</div>
+  <div class="header-center">
+    <span id="gemini-badge" class="ai-badge">⚡ Gemini AI</span>
+    <span id="clock" class="clock">00:00:00</span>
+  </div>
+  <div class="header-right">
+    <button onclick="toggleLang()" id="lang-toggle" class="lang-btn">🌐 தமிழ்</button>
+  </div>
+</header>
+
+<!-- SELECTOR BAR -->
+<div class="selector-bar">
+
+  <!-- 5 CROP BUTTONS -->
+  <div class="crop-btn-group">
+    <button class="crop-btn active" onclick="selectCrop(this,'rice')">🌾<br>Rice</button>
+    <button class="crop-btn" onclick="selectCrop(this,'maize')">🌽<br>Maize</button>
+    <button class="crop-btn" onclick="selectCrop(this,'groundnut')">🥜<br>Groundnut</button>
+    <button class="crop-btn" onclick="selectCrop(this,'sugarcane')">🎋<br>Sugarcane</button>
+    <button class="crop-btn" onclick="selectCrop(this,'coconut')">🥥<br>Coconut</button>
+  </div>
+
+  <!-- HIDDEN CROP SELECT for script.js compatibility -->
+  <select id="crop-select" style="display:none">
+    <option value="rice">Rice</option>
+    <option value="maize">Maize</option>
+    <option value="groundnut">Groundnut</option>
+    <option value="sugarcane">Sugarcane</option>
+    <option value="coconut">Coconut</option>
+  </select>
+
+  <div class="selector-group">
+    <label data-en="Growth Stage" data-ta="வளர்ச்சி நிலை">Growth Stage</label>
+    <select id="stage-select" onchange="runPredict()"></select>
+  </div>
+
+  <div class="selector-group">
+    <label data-en="Simulate" data-ta="சூழல் தேர்வு">Simulate</label>
+    <select id="scenario-select" onchange="applyScenario()">
+      <option value="normal">✅ Normal</option>
+      <option value="dry">🔥 Moisture Stress</option>
+      <option value="saline">⚠️ High TDS</option>
+      <option value="gas">🚨 Gas Danger</option>
+      <option value="heat">🌡️ Heat Stress</option>
+      <option value="critical">💀 All Critical</option>
+    </select>
+  </div>
+  <!-- ❌ Run AI Predict button removed -->
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-grid">
+
+  <!-- LEFT: SENSORS -->
+  <div class="sensor-panel">
+    <h3 data-en="📡 Live Sensors" data-ta="📡 நேரடி உணரிகள்">📡 Live Sensors</h3>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label data-en="Soil Moisture" data-ta="மண் ஈரப்பதம்">Soil Moisture</label>
+        <span id="val-moisture">72%</span>
+      </div>
+      <input type="range" id="s-moisture" min="0" max="100" value="72" oninput="syncVal('moisture');runPredict()">
+      <div class="slider-meta"><span id="moisture-min-label">Min:60%</span><span id="moisture-opt-label">Opt:80%</span></div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label data-en="TDS (Water Salinity)" data-ta="TDS (நீர் உப்பு)">TDS (Water Salinity)</label>
+        <span id="val-tds">350 ppm</span>
+      </div>
+      <input type="range" id="s-tds" min="0" max="3000" value="350" oninput="syncVal('tds');runPredict()">
+      <div class="slider-meta"><span id="tds-max-label">Safe: — ppm</span></div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label data-en="Air Temperature" data-ta="காற்று வெப்பநிலை">Air Temperature</label>
+        <span id="val-airtemp">27°C</span>
+      </div>
+      <input type="range" id="s-airtemp" min="10" max="55" value="27" oninput="syncVal('airtemp');runPredict()">
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label data-en="Soil Temperature" data-ta="மண் வெப்பநிலை">Soil Temperature</label>
+        <span id="val-soiltemp">23°C</span>
+      </div>
+      <input type="range" id="s-soiltemp" min="10" max="55" value="23" oninput="syncVal('soiltemp');runPredict()">
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label data-en="Humidity" data-ta="ஈரப்பதம்">Humidity</label>
+        <span id="val-humidity">65%</span>
+      </div>
+      <input type="range" id="s-humidity" min="0" max="100" value="65" oninput="syncVal('humidity');runPredict()">
+    </div>
+
+    <hr class="sensor-divider">
+    <div class="gas-label" data-en="🧪 Gas Sensors" data-ta="🧪 வாயு உணரிகள்">🧪 Gas Sensors</div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>MQ135 Ammonia</label><span id="val-mq135">50</span>
+      </div>
+      <input type="range" id="s-mq135" min="0" max="500" value="50" oninput="syncVal('mq135');runPredict()">
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>MQ4 Methane</label><span id="val-mq4">200</span>
+      </div>
+      <input type="range" id="s-mq4" min="0" max="2000" value="200" oninput="syncVal('mq4');runPredict()">
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>MQ7 CO</label><span id="val-mq7">10</span>
+      </div>
+      <input type="range" id="s-mq7" min="0" max="500" value="10" oninput="syncVal('mq7');runPredict()">
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>MQ2 Smoke</label><span id="val-mq2">50</span>
+      </div>
+      <input type="range" id="s-mq2" min="0" max="1000" value="50" oninput="syncVal('mq2');runPredict()">
+    </div>
+  </div>
+
+  <!-- CENTER: DASHBOARD -->
+  <div class="center-panel">
+
+    <!-- HEALTH RING -->
+    <div class="health-ring-container">
+      <svg class="ring-svg" viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="50"/>
+        <circle id="ring-fill" class="ring-fill" cx="60" cy="60" r="50"/>
+      </svg>
+      <div class="ring-text">
+        <span id="health-score-num" class="ring-score">--</span>
+        <span class="ring-unit">/100</span>
+        <span id="health-label" class="ring-label">—</span>
+      </div>
+    </div>
+
+    <!-- FARMER CHARACTER -->
+    <div class="farmer-container">
+      <div id="farmer-char" class="farmer-char">🧑‍🌾</div>
+      <div id="farmer-action" class="farmer-action">⚡</div>
+      <div id="farmer-bubble" class="farmer-bubble good">Analyzing...</div>
+      <div id="farmer-mood-label" class="farmer-mood-label">Loading...</div>
+    </div>
+
+    <!-- AI ADVICE -->
+    <div class="advice-box">
+      <div class="advice-title" data-en="🤖 AI Advice" data-ta="🤖 AI ஆலோசனை">🤖 AI Advice</div>
+      <div id="ai-advice" class="advice-text">Analyzing crop data...</div>
+      <div class="trend-row">
+        <span data-en="Moisture trend:" data-ta="ஈரப்பத போக்கு:">Moisture trend:</span>
+        <span id="trend-indicator" class="trend-stable">⟶ Stable</span>
+      </div>
+    </div>
+
+    <!-- DECISION CARDS -->
+    <div class="decision-cards">
+      <div class="dc-card">
+        <div class="dc-title" data-en="💧 Irrigate Now" data-ta="💧 நீர் வழங்கு">💧 Irrigate Now</div>
+        <div id="dc-irrigate-val" class="dc-val dc-no">—</div>
+      </div>
+      <div class="dc-card">
+        <div class="dc-title" data-en="🔒 Pump Lock" data-ta="🔒 பம்ப் பூட்டு">🔒 Pump Lock</div>
+        <div id="dc-lock-val" class="dc-val dc-no">—</div>
+      </div>
+      <div class="dc-card">
+        <div class="dc-title" data-en="⚠️ Gas Alert" data-ta="⚠️ வாயு எச்சரிக்கை">⚠️ Gas Alert</div>
+        <div id="dc-gas-val" class="dc-val dc-no">—</div>
+      </div>
+      <div class="dc-card">
+        <div class="dc-title" data-en="⭐ Critical Stage" data-ta="⭐ முக்கிய நிலை">⭐ Critical Stage</div>
+        <div id="dc-critical-val" class="dc-val dc-no">—</div>
+      </div>
+    </div>
+
+    <!-- STATUS CARDS -->
+    <div class="status-cards">
+      <div class="sc-card"><div class="sc-title" data-en="Pump" data-ta="பம்ப்">Pump</div><div id="pump-status" class="card-value status-off">—</div></div>
+      <div class="sc-card"><div class="sc-title" data-en="TDS" data-ta="TDS">TDS</div><div id="tds-status" class="card-value status-ok">—</div></div>
+      <div class="sc-card"><div class="sc-title" data-en="Gas" data-ta="வாயு">Gas</div><div id="gas-status" class="card-value status-ok">—</div></div>
+      <div class="sc-card"><div class="sc-title" data-en="Stage" data-ta="நிலை">Stage</div><div id="stage-status" class="card-value">—</div></div>
+    </div>
+
+    <!-- AQI BAR -->
+    <div class="aqi-section">
+      <div class="aqi-header">
+        <span data-en="Field AQI" data-ta="வயல் காற்று தரம்">Field AQI</span>
+        <span id="aqi-score-label">—</span>
+      </div>
+      <div class="aqi-bar"><div id="aqi-bar-fill" class="aqi-bar-fill" style="width:100%"></div></div>
+    </div>
+
+    <!-- WHATSAPP ALERT -->
+    <div class="wa-section">
+      <div class="wa-header">📱 <span data-en="WhatsApp Alert Preview" data-ta="WhatsApp எச்சரிக்கை">WhatsApp Alert Preview</span></div>
+      <div id="wa-message" class="wa-message">Generating alert...</div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: CHATBOT -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <span>🌿 Farmer AI Chatbot</span>
+      <span id="chat-source-badge" class="source-badge offline">📴 Offline</span>
+    </div>
+    <div id="chat-window" class="chat-window">
+      <div class="chat-msg bot-msg">
+        <span class="bot-icon">🌿</span>
+        <span class="msg-text" data-en="Hello! I am EcoSense AI. Ask me anything about your crop." data-ta="வணக்கம்! நான் EcoSense AI. உங்கள் பயிரைப் பற்றி கேளுங்கள்.">Hello! I am EcoSense AI. Ask me anything about your crop.</span>
+      </div>
+    </div>
+    <div id="typing-indicator" class="typing-indicator hidden">🌿 EcoSense is thinking...</div>
+    <div class="quick-asks">
+      <button onclick="quickAsk('Should I irrigate now?')" data-ta="நீர் வழங்கலாமா?">💧 Irrigate?</button>
+      <button onclick="quickAsk('Is the water safe to use?')" data-ta="நீர் பாதுகாப்பானதா?">🚿 Water safe?</button>
+      <button onclick="quickAsk('How is my crop health?')" data-ta="பயிர் நிலை என்ன?">🌱 Crop health?</button>
+      <button onclick="quickAsk('Can I fertilize now?')" data-ta="உரம் இடலாமா?">🌿 Fertilize?</button>
+      <button onclick="quickAsk('What is the air quality?')" data-ta="காற்று தரம்?">🌫️ Air quality?</button>
+      <button onclick="quickAsk('What is the pump status?')" data-ta="பம்ப் நிலை?">⚙️ Pump?</button>
+    </div>
+    <div class="chat-input-row">
+      <input id="chat-input" type="text" placeholder="Ask anything about your crop..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" class="send-btn">➤</button>
+    </div>
+  </div>
+
+</div><!-- end main-grid -->
+<script src="/static/script.js"></script>
+</body>
+</html>
