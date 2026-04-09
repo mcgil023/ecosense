@@ -105,15 +105,36 @@
       </div>
 
       <div class="hero-section">
-        <div class="health-ring">
-          <svg class="ring-svg" viewBox="0 0 100 100">
-            <circle class="ring-bg"   cx="50" cy="50" r="45"/>
-            <circle class="ring-fill" cx="50" cy="50" r="45" id="ringFill"/>
+        <div class="gauge-wrap">
+          <!-- Half-arc gauge -->
+          <svg class="gauge-svg" viewBox="0 0 140 80">
+            <!-- Track arc -->
+            <path id="gaugeTrack"
+              d="M10,75 A60,60 0 0,1 130,75"
+              fill="none" stroke="#1e3320" stroke-width="10"
+              stroke-linecap="round"/>
+            <!-- Colored fill arc -->
+            <path id="gaugeFill"
+              d="M10,75 A60,60 0 0,1 130,75"
+              fill="none" stroke="#2ecc71" stroke-width="10"
+              stroke-linecap="round"
+              stroke-dasharray="188"
+              stroke-dashoffset="188"
+              style="transition: stroke-dashoffset 1s ease, stroke .5s;"/>
+            <!-- Tick marks -->
+            <text x="6"   y="72" fill="#4a6e4a" font-size="8">0</text>
+            <text x="60"  y="15" fill="#4a6e4a" font-size="8" text-anchor="middle">50</text>
+            <text x="126" y="72" fill="#4a6e4a" font-size="8" text-anchor="end">100</text>
+            <!-- Needle tip dot -->
+            <circle id="gaugeNeedle" cx="10" cy="75" r="5"
+              fill="#2ecc71" stroke="#0a130b" stroke-width="2"
+              style="transition: cx 1s ease, cy 1s ease, fill .5s;"/>
           </svg>
-          <div class="ring-text">
-            <span class="ring-score" id="scoreText">--</span>
-            <span class="ring-label">/100</span>
-            <span class="ring-label" id="confText">--</span>
+          <!-- Score below arc -->
+          <div class="gauge-score-row">
+            <span class="gauge-score" id="scoreText">--</span>
+            <span class="gauge-sub">HEALTH SCORE / 100</span>
+            <span id="confText">--</span>
           </div>
         </div>
 

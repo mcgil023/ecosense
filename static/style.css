@@ -665,3 +665,46 @@ html, body {
 
 /* Chat head rename */
 .chat-head-title { font-size: 13px; font-weight: 700; color: var(--green); }
+
+/* ── Remove old ring ─────────────────────────────────────────── */
+.health-ring, .ring-svg, .ring-bg, .ring-fill, .ring-text,
+.ring-score, .ring-label { all: unset; }
+
+/* ── Half-Arc Gauge ──────────────────────────────────────────── */
+.gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.gauge-svg {
+  width: 140px;
+  height: 80px;
+  overflow: visible;
+}
+.gauge-score-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -4px;
+}
+.gauge-score {
+  font-size: 38px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+.gauge-sub {
+  font-size: 11px;
+  color: #7a9e7a;
+  letter-spacing: 1px;
+  margin-top: 1px;
+}
+#confText {
+  font-size: 11px;
+  color: #7a9e7a;
+  margin-top: 3px;
+}
