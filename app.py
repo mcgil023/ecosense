@@ -177,7 +177,7 @@ def chat():
                       f"irrigate={result['irrigate_now']}, pump_locked={result['pump_locked']}, gas_alert={result['gas_alert']}. "
                       f"Farmer asks: {msg}. "
                       f"Give a concise, practical, actionable answer in 2-3 sentences.")
-            resp = gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+            resp = gemini_client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
             return jsonify({"reply":resp.text.strip(),"source":"gemini"})
         except Exception as e:
             print(f"Gemini chat error: {e}")
