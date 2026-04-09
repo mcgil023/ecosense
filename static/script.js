@@ -134,13 +134,24 @@ async function runPredict() {
     setText('scoreText',  d.health_score);
     setText('adviceText', adviceMap[d.health_status] || 'Analyzing...');
 
-    // Animated ring
-    const ring = gid('ringFill');
-    if (ring) {
-      const pct   = Math.max(0, Math.min(100, d.health_score));
-      const dash  = (pct / 100) * 283;
-      ring.style.strokeDashoffset = 283 - dash;
-      ring.style.stroke = pct >= 75 ? '#2ecc71' : pct >= 50 ? '#f1c40f' : pct >= 25 ? '#e67e22' : '#e74c3c';
+    // Animate half-arc gauge
+    const fill   = gid('gaugeFill');
+    const needle = gid('gaugeNeedle');
+    const pct    = Math.max(0, Math.min(100, d.health_score));
+    const color  = pct >= 75 ? '#2ecc71' : pct >= 50 ? '#f1c40f' : pct >= 25 ? '#e67e22' : '#e74c3c';
+    const arcLen = 188;
+    if (fill) {
+      fill.style.strokeDashoffset = arcLen - (pct / 100) * arcLen;
+      fill.style.stroke = color;
+    }
+    // Move needle dot along the arc path (semicircle: cx=70, cy=75, r=60)
+    if (needle) {
+      const angle = Math.PI - (pct / 100) * Math.PI; // 180° to 0°
+      const nx = 70 + 60 * Math.cos(angle);
+      const ny = 75 - 60 * Math.sin(angle);
+      needle.setAttribute('cx', nx.toFixed(1));
+      needle.setAttribute('cy', ny.toFixed(1));
+      needle.setAttribute('fill', color);
     }
 
     // Health tag with color class
