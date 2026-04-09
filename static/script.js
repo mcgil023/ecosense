@@ -13,7 +13,7 @@ const SCENARIOS = {
   critical: {soil_moisture:18,  tds_ppm:1600, air_temp_c:43, humidity_pct:22, soil_temp_c:39, mq135_ammonia:320, mq4_methane:1800, mq7_co:170}
 };
 
-// Current sensor values held in memory (source of truth)
+// Single source of truth for sensor values
 let currentSensors = Object.assign({}, SCENARIOS.normal);
 
 function gid(x)  { return document.getElementById(x); }
@@ -21,28 +21,26 @@ function setBar(id, p) { const el=gid(id); if(el) el.style.width = Math.max(4,Ma
 function setText(id, t) { const el=gid(id); if(el) el.textContent = t; }
 
 // ── Clock ───────────────────────────────────────────────────────
-function clock() { gid('clock').textContent = new Date().toLocaleTimeString(); }
+function clock() { if(gid('clock')) gid('clock').textContent = new Date().toLocaleTimeString(); }
 setInterval(clock, 1000); clock();
 
 // ── Mode Switch ─────────────────────────────────────────────────
 function setMode(mode) {
   MODE = mode;
-  const liveBtn = gid('btn-live');
-  const simBtn  = gid('btn-sim');
-  const simBar  = gid('simbar');
-  const modeTag = gid('modeTag');
+  const liveBtn = gid('btn-live'), simBtn = gid('btn-sim');
+  const simBar  = gid('simbar'),   modeTag = gid('modeTag');
 
   if (MODE === 'live') {
-    liveBtn.classList.add('active-mode');
-    simBtn.classList.remove('active-mode');
-    if (simBar) simBar.style.opacity = '0.4';
-    if (modeTag) { modeTag.textContent = '📡 LIVE'; modeTag.style.background='#1a4d1a'; }
+    if(liveBtn) liveBtn.classList.add('active-mode');
+    if(simBtn)  simBtn.classList.remove('active-mode');
+    if(simBar)  simBar.style.opacity = '0.4';
+    if(modeTag){ modeTag.textContent = '📡 LIVE'; modeTag.style.background='#1a4d1a'; }
     startLivePoll();
   } else {
-    simBtn.classList.add('active-mode');
-    liveBtn.classList.remove('active-mode');
-    if (simBar) simBar.style.opacity = '1';
-    if (modeTag) { modeTag.textContent = '🎛️ SIM'; modeTag.style.background='#3a2a00'; }
+    if(simBtn)  simBtn.classList.add('active-mode');
+    if(liveBtn) liveBtn.classList.remove('active-mode');
+    if(simBar)  simBar.style.opacity = '1';
+    if(modeTag){ modeTag.textContent = '🎛️ SIM'; modeTag.style.background='#3a2a00'; }
     stopLivePoll();
     setScenario('normal');
   }
@@ -57,39 +55,37 @@ function startLivePoll() {
 function stopLivePoll() {
   if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
 }
+
 async function fetchLive() {
   try {
     const r = await fetch('/live');
     const d = await r.json();
+    const tag = gid('modeTag');
     if (d.status === 'no_data') {
-      setText('modeTag', '📡 LIVE — No ESP32 data yet');
-      gid('modeTag').style.background = '#4d2a00';
+      if(tag){ tag.textContent = '📡 LIVE — Waiting for ESP32...'; tag.style.background='#4d2a00'; }
       return;
     }
-    // Update currentSensors with live data
-    Object.keys(d).forEach(k => { if (k !== 'status') currentSensors[k] = d[k]; });
+    // Merge live data into currentSensors
+    Object.keys(d).forEach(k => { if(k !== 'status') currentSensors[k] = Number(d[k]); });
     renderSensors(currentSensors);
     await runPredict();
-    gid('modeTag').textContent = '📡 LIVE ✅';
-    gid('modeTag').style.background = '#1a4d1a';
+    if(tag){ tag.textContent = '📡 LIVE ✅'; tag.style.background='#1a4d1a'; }
   } catch(e) {
-    console.error('Live fetch error:', e);
-    gid('modeTag').textContent = '📡 LIVE — Error';
-    gid('modeTag').style.background = '#4d0000';
+    const tag = gid('modeTag');
+    if(tag){ tag.textContent = '📡 LIVE — Error'; tag.style.background='#4d0000'; }
   }
 }
 
 // ── Render sensor bars ──────────────────────────────────────────
 function renderSensors(d) {
-  setText('v-moist',    d.soil_moisture + '%');
-  setText('v-tds',      d.tds_ppm + ' ppm');
-  setText('v-air',      d.air_temp_c + '°C');
-  setText('v-hum',      d.humidity_pct + '%');
-  setText('v-soiltemp', d.soil_temp_c + '°C');
-  setText('v-mq135',    d.mq135_ammonia + ' ppm');
-  setText('v-mq4',      d.mq4_methane + ' ppm');
-  setText('v-mq7',      d.mq7_co + ' ppm');
-
+  setText('v-moist',    d.soil_moisture  + '%');
+  setText('v-tds',      d.tds_ppm        + ' ppm');
+  setText('v-air',      d.air_temp_c     + '°C');
+  setText('v-hum',      d.humidity_pct   + '%');
+  setText('v-soiltemp', d.soil_temp_c    + '°C');
+  setText('v-mq135',    d.mq135_ammonia  + ' ppm');
+  setText('v-mq4',      d.mq4_methane    + ' ppm');
+  setText('v-mq7',      d.mq7_co         + ' ppm');
   setBar('b-moist',    d.soil_moisture);
   setBar('b-tds',      Math.min(100, d.tds_ppm / 20));
   setBar('b-air',      Math.min(100, d.air_temp_c * 2));
@@ -97,51 +93,78 @@ function renderSensors(d) {
   setBar('b-soiltemp', Math.min(100, d.soil_temp_c * 2));
 }
 
-// ── Scenario setter (sim mode) — KEY FIX ───────────────────────
+// ── Scenario setter ─────────────────────────────────────────────
 function setScenario(name) {
-  const v = SCENARIOS[name];
-  // Update currentSensors in memory — this is what runPredict reads
-  currentSensors = Object.assign({}, v);
+  currentSensors = Object.assign({}, SCENARIOS[name]);
   renderSensors(currentSensors);
-  runPredict();   // called AFTER currentSensors is updated
+  runPredict();
+  // Highlight active scenario button
+  document.querySelectorAll('.scenario-chips button').forEach(b => b.classList.remove('active-scene'));
+  const sc = gid('sc-' + name);
+  if (sc) sc.classList.add('active-scene');
 }
 
-// ── Run Predict — always uses currentSensors ────────────────────
+// ── Run Predict ─────────────────────────────────────────────────
 async function runPredict() {
+  const stageEl = gid('stageSel');
+  if (!stageEl) return;
   try {
     const r = await fetch('/predict', {
-      method: 'POST',
+      method:  'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        crop:    currentCrop,
-        stage:   gid('stageSel').value,
-        sensors: currentSensors        // ← always fresh object
-      })
+      body: JSON.stringify({ crop: currentCrop, stage: stageEl.value, sensors: currentSensors })
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Predict failed');
 
-    setText('scoreText', d.health_score);
-    setText('healthTag', d.health_status === 'GOOD'     ? '🌱 HEALTHY' :
-                         d.health_status === 'MODERATE' ? '⚠️ MODERATE' :
-                         d.health_status === 'POOR'     ? '🔴 POOR' : '💀 CRITICAL');
-    setText('adviceText',
-      d.health_status === 'GOOD'     ? '✅ Crop looks healthy. Keep monitoring.' :
-      d.health_status === 'MODERATE' ? '⚠️ Crop needs attention. Check moisture & temperature.' :
-      d.health_status === 'POOR'     ? '🔴 Crop is struggling. Irrigate and inspect field.' :
-                                       '💀 CRITICAL — Immediate action required!');
+    const healthLabels = {
+      'GOOD':     '🌱 HEALTHY',
+      'MODERATE': '⚠️ MODERATE',
+      'POOR':     '🔴 POOR',
+      'CRITICAL': '💀 CRITICAL'
+    };
+    const adviceMap = {
+      'GOOD':     '✅ Crop looks healthy. Keep monitoring.',
+      'MODERATE': '⚠️ Crop needs attention. Check moisture & temperature.',
+      'POOR':     '🔴 Crop is struggling. Irrigate and inspect field.',
+      'CRITICAL': '💀 CRITICAL — Immediate action required!'
+    };
 
+    // Update score
+    setText('scoreText',  d.health_score);
+    setText('adviceText', adviceMap[d.health_status] || 'Analyzing...');
+
+    // Animated ring
+    const ring = gid('ringFill');
+    if (ring) {
+      const pct   = Math.max(0, Math.min(100, d.health_score));
+      const dash  = (pct / 100) * 283;
+      ring.style.strokeDashoffset = 283 - dash;
+      ring.style.stroke = pct >= 75 ? '#2ecc71' : pct >= 50 ? '#f1c40f' : pct >= 25 ? '#e67e22' : '#e74c3c';
+    }
+
+    // Health tag with color class
+    const tag = gid('healthTag');
+    if (tag) {
+      tag.textContent = healthLabels[d.health_status] || d.health_status;
+      tag.className   = 'health-tag';
+      if      (d.health_status === 'MODERATE') tag.classList.add('moderate');
+      else if (d.health_status === 'POOR')     tag.classList.add('poor');
+      else if (d.health_status === 'CRITICAL') tag.classList.add('critical');
+    }
     setText('d-irrigate', d.irrigate_now ? '✅ YES' : 'NO');
     setText('d-pump',     d.pump_locked  ? '🔒 LOCKED' : (d.pump_on ? '🟢 ON' : 'OFF'));
     setText('d-gas',      d.gas_alert    ? '🚨 ALERT'  : '✅ CLEAR');
-    setText('d-stage',    gid('stageSel').value);
-    setText('t-moist',    d.trend_moisture);
+    setText('d-stage',    stageEl.value);
+    setText('t-moist',    d.trend_moisture || 'stable');
     setText('t-tds',      d.tds_safe ? '✅ Safe' : '⚠️ High');
-    setText('t-aqi',      d.field_aqi_label);
-    if (gid('confText')) setText('confText', 'Confidence ' + d.confidence_pct + '%');
+    setText('t-aqi',      d.field_aqi_label || '--');
+    if(gid('confText')) setText('confText', 'Confidence ' + d.confidence_pct + '%');
   } catch(e) {
     console.error('Predict error:', e);
-    setText('adviceText', 'Prediction error — check server.');
+    setText('adviceText', 'Prediction error — server may be starting up. Retrying...');
+    // Auto retry after 3s
+    setTimeout(runPredict, 3000);
   }
 }
 
@@ -160,27 +183,60 @@ async function loadStatus() {
     const d = await fetch('/status').then(r => r.json());
     setText('aiBadge',    d.gemini_ready ? '🤖 Gemini ON' : '🤖 AI');
     setText('chatStatus', d.gemini_ready ? 'ONLINE' : 'OFFLINE');
+    const dot = gid('chatDot');
+    if (dot) { dot.className = d.gemini_ready ? 'dot online' : 'dot'; }
   } catch {}
+}
+
+// ── FillStages — BUG FIX: handle both array and object stages ───
+function fillStages() {
+  const s = gid('stageSel');
+  if (!s) return;
+  s.innerHTML = '';
+  const crop = cropStages[currentCrop];
+  let stages;
+  if (!crop) {
+    stages = ['germination'];
+  } else if (Array.isArray(crop.stages)) {
+    stages = crop.stages;                   // ✅ array → use directly
+  } else if (crop.stages && typeof crop.stages === 'object') {
+    stages = Object.keys(crop.stages);      // ✅ object → get keys
+  } else {
+    stages = ['germination'];
+  }
+  stages.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = v[0].toUpperCase() + v.slice(1).replace(/_/g,' ');
+    s.appendChild(o);
+  });
+  runPredict();
 }
 
 // ── Crop tabs ───────────────────────────────────────────────────
 async function boot() {
-  const c = await fetch('/crops').then(r => r.json());
-  cropStages = c;
-  const tabs = gid('crop-tabs');
-  Object.keys(c).forEach((k, i) => {
-    const b = document.createElement('button');
-    b.textContent = '🌾 ' + k[0].toUpperCase() + k.slice(1);
-    b.className   = 'crop-btn' + (i === 0 ? ' active' : '');
-    b.onclick = () => {
-      document.querySelectorAll('.crop-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      currentCrop = k;
-      fillStages();
-      runPredict();
-    };
-    tabs.appendChild(b);
-  });
+  try {
+    const c = await fetch('/crops').then(r => r.json());
+    cropStages = c;
+    const tabs = gid('crop-tabs');
+    if (tabs) {
+      Object.keys(c).forEach((k, i) => {
+        const b = document.createElement('button');
+        b.textContent = '🌾 ' + k[0].toUpperCase() + k.slice(1);
+        b.className   = 'crop-btn' + (i === 0 ? ' active' : '');
+        b.onclick = () => {
+          document.querySelectorAll('.crop-btn').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          currentCrop = k;
+          fillStages();
+        };
+        tabs.appendChild(b);
+      });
+    }
+  } catch(e) {
+    console.error('Failed to load crops:', e);
+    cropStages = { rice: { stages: ['germination','tillering','flowering','harvest'], moist_min:60, moist_opt:75, tds_max:800 } };
+  }
   fillStages();
   await loadStatus();
   await loadWeather();
@@ -188,45 +244,38 @@ async function boot() {
   setMode('sim');
 }
 
-function fillStages() {
-  const s = gid('stageSel');
-  s.innerHTML = '';
-  const crop = cropStages[currentCrop];
-  const stages = crop?.stages ? Object.keys(crop.stages) : (crop || ['germination']);
-  stages.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = v[0].toUpperCase() + v.slice(1).replace('_',' ');
-    s.appendChild(o);
-  });
-  runPredict();
-}
-
 // ── Chat ─────────────────────────────────────────────────────────
 function addMsg(cls, txt) {
   const box = gid('chatBox');
+  if (!box) return;
   const div = document.createElement('div');
   div.className = cls; div.textContent = txt;
   box.appendChild(div); box.scrollTop = box.scrollHeight;
 }
-function quickAsk(q) { gid('chatInput').value = q; sendChat(); }
+function quickAsk(q) { const i=gid('chatInput'); if(i){ i.value=q; sendChat(); } }
+
 async function sendChat() {
-  const msg = gid('chatInput').value.trim();
+  const input = gid('chatInput');
+  if (!input) return;
+  const msg = input.value.trim();
   if (!msg) return;
-  addMsg('user', msg); gid('chatInput').value = '';
+  addMsg('user', msg); input.value = '';
   try {
+    const stageEl = gid('stageSel');
     const r = await fetch('/chat', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        message: msg,
-        crop:    currentCrop,
-        stage:   gid('stageSel').value,
-        sensors: currentSensors          // ← uses currentSensors too
+        message: msg, crop: currentCrop,
+        stage:   stageEl ? stageEl.value : 'germination',
+        sensors: currentSensors
       })
     });
     const d = await r.json();
     addMsg('bot', d.reply || 'No reply');
-  } catch { addMsg('bot', 'Connection error.'); }
+  } catch { addMsg('bot', 'Connection error — server may be restarting.'); }
 }
 
-gid('stageSel')?.addEventListener('change', runPredict);
+const stageEl = gid('stageSel');
+if (stageEl) stageEl.addEventListener('change', runPredict);
 window.addEventListener('load', boot);
