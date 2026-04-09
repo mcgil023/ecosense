@@ -66,7 +66,6 @@
       <div class="gas-card" id="gc-mq135"><div class="gc-icon">☁️</div><div class="gc-name">NH₃ Ammonia</div><div id="v-mq135" class="gc-val">—</div><div id="s-mq135" class="gc-status">—</div></div>
       <div class="gas-card" id="gc-mq4"><div class="gc-icon">🔥</div><div class="gc-name">CH₄ Methane</div><div id="v-mq4" class="gc-val">—</div><div id="s-mq4" class="gc-status">—</div></div>
       <div class="gas-card" id="gc-mq7"><div class="gc-icon">💨</div><div class="gc-name">CO Carbon</div><div id="v-mq7" class="gc-val">—</div><div id="s-mq7" class="gc-status">—</div></div>
-      <div class="gas-card" id="gc-mq2"><div class="gc-icon">🚬</div><div class="gc-name">Smoke</div><div id="v-mq2" class="gc-val">—</div><div id="s-mq2" class="gc-status">—</div></div>
     </div>
     <input type="hidden" id="s-moisture" value="72">
     <input type="hidden" id="s-tds" value="350">
@@ -76,7 +75,6 @@
     <input type="hidden" id="s-mq135-v" value="50">
     <input type="hidden" id="s-mq4-v" value="200">
     <input type="hidden" id="s-mq7-v" value="10">
-    <input type="hidden" id="s-mq2-v" value="50">
   </section>
 
   <!-- CENTER — HEALTH + FARMER -->
@@ -428,10 +426,7 @@
         <div class="sl-top"><span>💨 CO <em class="sl-limit">(&gt;100 danger)</em></span><span id="disp-mq7" class="sl-val">10 ppm</span></div>
         <input type="range" min="0" max="300" value="10" step="5" id="sl-mq7" oninput="sliderChange('mq7',this.value,' ppm')">
       </div>
-      <div class="sl-item">
-        <div class="sl-top"><span>🚬 Smoke <em class="sl-limit">(&gt;400 danger)</em></span><span id="disp-mq2" class="sl-val">50 ppm</span></div>
-        <input type="range" min="0" max="800" value="50" step="10" id="sl-mq2" oninput="sliderChange('mq2',this.value,' ppm')">
-      </div>
+
     </div>
   </div>
 </div>
