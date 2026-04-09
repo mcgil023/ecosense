@@ -3,11 +3,18 @@ from pathlib import Path
 from datetime import datetime
 from collections import deque
 import requests
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
+from queue import Queue, Empty
+import threading
 import numpy as np
 import pandas as pd
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+# ── SSE clients list ──────────────────────────────────────────
+_sse_clients = []
+_sse_lock    = threading.Lock()
 
 # ── Config ───────────────────────────────────────────────────
 GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY",  "")
@@ -277,6 +284,16 @@ def receive_esp32():
     raw        = request.json or {}
     esp32_data = raw.get("sensors", raw)
     print(f"📡 ESP32: {list(esp32_data.keys())}")
+    # Push to all SSE clients instantly
+    with _sse_lock:
+        dead = []
+        for q in _sse_clients:
+            try:
+                q.put_nowait(esp32_data)
+            except:
+                dead.append(q)
+        for q in dead:
+            _sse_clients.remove(q)
     return jsonify({"status":"ok","received":list(esp32_data.keys())})
 
 @app.route("/live")
@@ -352,6 +369,34 @@ def chat():
     except Exception as e:
         print(f"❌ /chat: {e}")
         return jsonify({"reply":"Sorry, something went wrong.","source":"error"}), 500
+
+@app.route("/stream")
+def stream():
+    """Server-Sent Events — pushes sensor data to browser instantly."""
+    def generate():
+        q = Queue(maxsize=10)
+        with _sse_lock:
+            _sse_clients.append(q)
+        try:
+            # Send current data immediately on connect
+            if esp32_data:
+                yield f"data: {json.dumps(esp32_data)}\n\n"
+            while True:
+                try:
+                    data = q.get(timeout=25)
+                    yield f"data: {json.dumps(data)}\n\n"
+                except Empty:
+                    yield f"data: {json.dumps({'_ping': True})}\n\n"
+        finally:
+            with _sse_lock:
+                if q in _sse_clients:
+                    _sse_clients.remove(q)
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no",
+                 "Access-Control-Allow-Origin":"*"}
+    )
 
 @app.route("/status")
 def status():
