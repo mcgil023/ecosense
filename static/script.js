@@ -1,7 +1,7 @@
 
 // ── State ──────────────────────────────────────────────────────
 let currentCrop = 'rice', cropStages = {};
-let MODE = 'sim';          // 'sim' or 'live'
+let MODE = 'sim';
 let liveInterval = null;
 
 const SCENARIOS = {
@@ -13,8 +13,10 @@ const SCENARIOS = {
   critical: {soil_moisture:18,  tds_ppm:1600, air_temp_c:43, humidity_pct:22, soil_temp_c:39, mq135_ammonia:320, mq4_methane:1800, mq7_co:170}
 };
 
+// Current sensor values held in memory (source of truth)
+let currentSensors = Object.assign({}, SCENARIOS.normal);
+
 function gid(x)  { return document.getElementById(x); }
-function hv(id)  { return +gid(id).value; }
 function setBar(id, p) { const el=gid(id); if(el) el.style.width = Math.max(4,Math.min(100,p))+'%'; }
 function setText(id, t) { const el=gid(id); if(el) el.textContent = t; }
 
@@ -46,43 +48,30 @@ function setMode(mode) {
   }
 }
 
-// ── Live Poll — fetches /live every 5s ──────────────────────────
+// ── Live Poll ───────────────────────────────────────────────────
 function startLivePoll() {
   stopLivePoll();
-  fetchLive();  // immediate first fetch
+  fetchLive();
   liveInterval = setInterval(fetchLive, 5000);
 }
-
 function stopLivePoll() {
   if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
 }
-
 async function fetchLive() {
   try {
     const r = await fetch('/live');
     const d = await r.json();
-
     if (d.status === 'no_data') {
       setText('modeTag', '📡 LIVE — No ESP32 data yet');
       gid('modeTag').style.background = '#4d2a00';
       return;
     }
-
-    // Update hidden sim inputs with live values so predict uses them
-    if (d.soil_moisture !== undefined) gid('s-moist-v').value    = d.soil_moisture;
-    if (d.tds_ppm       !== undefined) gid('s-tds-v').value      = d.tds_ppm;
-    if (d.air_temp_c    !== undefined) gid('s-air-v').value      = d.air_temp_c;
-    if (d.humidity_pct  !== undefined) gid('s-hum-v').value      = d.humidity_pct;
-    if (d.soil_temp_c   !== undefined) gid('s-soiltemp-v').value = d.soil_temp_c;
-    if (d.mq135_ammonia !== undefined) gid('s-mq135-v').value    = d.mq135_ammonia;
-    if (d.mq4_methane   !== undefined) gid('s-mq4-v').value      = d.mq4_methane;
-    if (d.mq7_co        !== undefined) gid('s-mq7-v').value      = d.mq7_co;
-
-    renderSensors(d);
-    runPredict();
+    // Update currentSensors with live data
+    Object.keys(d).forEach(k => { if (k !== 'status') currentSensors[k] = d[k]; });
+    renderSensors(currentSensors);
+    await runPredict();
     gid('modeTag').textContent = '📡 LIVE ✅';
     gid('modeTag').style.background = '#1a4d1a';
-
   } catch(e) {
     console.error('Live fetch error:', e);
     gid('modeTag').textContent = '📡 LIVE — Error';
@@ -92,79 +81,67 @@ async function fetchLive() {
 
 // ── Render sensor bars ──────────────────────────────────────────
 function renderSensors(d) {
-  const moist = d.soil_moisture !== undefined ? d.soil_moisture : hv('s-moist-v');
-  const tds   = d.tds_ppm       !== undefined ? d.tds_ppm       : hv('s-tds-v');
-  const air   = d.air_temp_c    !== undefined ? d.air_temp_c    : hv('s-air-v');
-  const hum   = d.humidity_pct  !== undefined ? d.humidity_pct  : hv('s-hum-v');
-  const st    = d.soil_temp_c   !== undefined ? d.soil_temp_c   : hv('s-soiltemp-v');
-  const nh3   = d.mq135_ammonia !== undefined ? d.mq135_ammonia : hv('s-mq135-v');
-  const ch4   = d.mq4_methane   !== undefined ? d.mq4_methane   : hv('s-mq4-v');
-  const co    = d.mq7_co        !== undefined ? d.mq7_co        : hv('s-mq7-v');
+  setText('v-moist',    d.soil_moisture + '%');
+  setText('v-tds',      d.tds_ppm + ' ppm');
+  setText('v-air',      d.air_temp_c + '°C');
+  setText('v-hum',      d.humidity_pct + '%');
+  setText('v-soiltemp', d.soil_temp_c + '°C');
+  setText('v-mq135',    d.mq135_ammonia + ' ppm');
+  setText('v-mq4',      d.mq4_methane + ' ppm');
+  setText('v-mq7',      d.mq7_co + ' ppm');
 
-  setText('v-moist',   moist + '%');     setBar('b-moist',   moist);
-  setText('v-tds',     tds   + ' ppm');  setBar('b-tds',     Math.min(100, tds/20));
-  setText('v-air',     air   + '°C');    setBar('b-air',     Math.min(100, air*2));
-  setText('v-hum',     hum   + '%');     setBar('b-hum',     hum);
-  setText('v-soiltemp',st    + '°C');    setBar('b-soiltemp',Math.min(100, st*2));
-  setText('v-mq135',   nh3   + ' ppm');
-  setText('v-mq4',     ch4   + ' ppm');
-  setText('v-mq7',     co    + ' ppm');
+  setBar('b-moist',    d.soil_moisture);
+  setBar('b-tds',      Math.min(100, d.tds_ppm / 20));
+  setBar('b-air',      Math.min(100, d.air_temp_c * 2));
+  setBar('b-hum',      d.humidity_pct);
+  setBar('b-soiltemp', Math.min(100, d.soil_temp_c * 2));
 }
 
-// ── Get sensor values for predict ──────────────────────────────
-function getSensors() {
-  return {
-    soil_moisture: hv('s-moist-v'),  tds_ppm: hv('s-tds-v'),
-    air_temp_c:    hv('s-air-v'),    humidity_pct: hv('s-hum-v'),
-    soil_temp_c:   hv('s-soiltemp-v'), mq135_ammonia: hv('s-mq135-v'),
-    mq4_methane:   hv('s-mq4-v'),   mq7_co: hv('s-mq7-v')
-  };
-}
-
-// ── Scenario setter (sim mode) ──────────────────────────────────
+// ── Scenario setter (sim mode) — KEY FIX ───────────────────────
 function setScenario(name) {
   const v = SCENARIOS[name];
-  gid('s-moist-v').value    = v.soil_moisture;
-  gid('s-tds-v').value      = v.tds_ppm;
-  gid('s-air-v').value      = v.air_temp_c;
-  gid('s-hum-v').value      = v.humidity_pct;
-  gid('s-soiltemp-v').value = v.soil_temp_c;
-  gid('s-mq135-v').value    = v.mq135_ammonia;
-  gid('s-mq4-v').value      = v.mq4_methane;
-  gid('s-mq7-v').value      = v.mq7_co;
-  renderSensors(v);
-  runPredict();
+  // Update currentSensors in memory — this is what runPredict reads
+  currentSensors = Object.assign({}, v);
+  renderSensors(currentSensors);
+  runPredict();   // called AFTER currentSensors is updated
 }
 
-// ── Predict ─────────────────────────────────────────────────────
+// ── Run Predict — always uses currentSensors ────────────────────
 async function runPredict() {
   try {
-    const sensors = getSensors();
     const r = await fetch('/predict', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({crop: currentCrop, stage: gid('stageSel').value, sensors})
+      body: JSON.stringify({
+        crop:    currentCrop,
+        stage:   gid('stageSel').value,
+        sensors: currentSensors        // ← always fresh object
+      })
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Predict failed');
 
-    gid('scoreText').textContent = d.health_score;
-    gid('healthTag').textContent = d.health_status === 'GOOD' ? '🌱 HEALTHY' : d.health_status;
-    gid('adviceText').textContent =
-      d.health_status === 'GOOD'     ? 'Crop looks healthy. Keep monitoring.' :
-      d.health_status === 'MODERATE' ? 'Crop needs attention. Check moisture.' :
-      d.health_status === 'POOR'     ? 'Crop is struggling. Take action soon.' :
-                                       'Urgent! Crop is in critical condition.';
-    gid('d-irrigate').textContent = d.irrigate_now ? 'YES' : 'NO';
-    gid('d-pump').textContent     = d.pump_locked  ? 'LOCKED' : (d.pump_on ? 'ON' : 'OFF');
-    gid('d-gas').textContent      = d.gas_alert    ? 'ALERT'  : 'CLEAR';
-    gid('d-stage').textContent    = gid('stageSel').value;
-    gid('t-moist').textContent    = d.trend_moisture;
-    gid('t-tds').textContent      = d.tds_safe ? 'Safe' : 'High';
-    gid('t-aqi').textContent      = d.field_aqi_label;
+    setText('scoreText', d.health_score);
+    setText('healthTag', d.health_status === 'GOOD'     ? '🌱 HEALTHY' :
+                         d.health_status === 'MODERATE' ? '⚠️ MODERATE' :
+                         d.health_status === 'POOR'     ? '🔴 POOR' : '💀 CRITICAL');
+    setText('adviceText',
+      d.health_status === 'GOOD'     ? '✅ Crop looks healthy. Keep monitoring.' :
+      d.health_status === 'MODERATE' ? '⚠️ Crop needs attention. Check moisture & temperature.' :
+      d.health_status === 'POOR'     ? '🔴 Crop is struggling. Irrigate and inspect field.' :
+                                       '💀 CRITICAL — Immediate action required!');
+
+    setText('d-irrigate', d.irrigate_now ? '✅ YES' : 'NO');
+    setText('d-pump',     d.pump_locked  ? '🔒 LOCKED' : (d.pump_on ? '🟢 ON' : 'OFF'));
+    setText('d-gas',      d.gas_alert    ? '🚨 ALERT'  : '✅ CLEAR');
+    setText('d-stage',    gid('stageSel').value);
+    setText('t-moist',    d.trend_moisture);
+    setText('t-tds',      d.tds_safe ? '✅ Safe' : '⚠️ High');
+    setText('t-aqi',      d.field_aqi_label);
+    if (gid('confText')) setText('confText', 'Confidence ' + d.confidence_pct + '%');
   } catch(e) {
-    console.error(e);
-    gid('adviceText').textContent = 'Prediction error.';
+    console.error('Predict error:', e);
+    setText('adviceText', 'Prediction error — check server.');
   }
 }
 
@@ -172,8 +149,8 @@ async function runPredict() {
 async function loadWeather() {
   try {
     const d = await fetch('/weather').then(r => r.json());
-    gid('weatherPill').textContent  = '☁️ ' + d.temp + '°C';
-    gid('weatherStrip').textContent = `🌥 ${d.city}: ${d.temp}°C · Humidity ${d.humidity}% · Rain ${d.rain}mm · Wind ${d.wind}m/s`;
+    setText('weatherPill',  '☁️ ' + d.temp + '°C');
+    setText('weatherStrip', `🌥 ${d.city}: ${d.temp}°C · Humidity ${d.humidity}% · Rain ${d.rain}mm · Wind ${d.wind}m/s`);
   } catch {}
 }
 
@@ -181,8 +158,8 @@ async function loadWeather() {
 async function loadStatus() {
   try {
     const d = await fetch('/status').then(r => r.json());
-    gid('aiBadge').textContent    = d.gemini_ready ? '🤖 Gemini ON' : '🤖 AI';
-    gid('chatStatus').textContent = d.gemini_ready ? 'ONLINE' : 'OFFLINE';
+    setText('aiBadge',    d.gemini_ready ? '🤖 Gemini ON' : '🤖 AI');
+    setText('chatStatus', d.gemini_ready ? 'ONLINE' : 'OFFLINE');
   } catch {}
 }
 
@@ -208,17 +185,20 @@ async function boot() {
   await loadStatus();
   await loadWeather();
   setInterval(loadWeather, 60000);
-  setMode('sim');   // default sim mode
+  setMode('sim');
 }
 
 function fillStages() {
   const s = gid('stageSel');
   s.innerHTML = '';
-  (cropStages[currentCrop]?.stages || ['germination']).forEach(v => {
+  const crop = cropStages[currentCrop];
+  const stages = crop?.stages ? Object.keys(crop.stages) : (crop || ['germination']);
+  stages.forEach(v => {
     const o = document.createElement('option');
-    o.value = v; o.textContent = v[0].toUpperCase() + v.slice(1);
+    o.value = v; o.textContent = v[0].toUpperCase() + v.slice(1).replace('_',' ');
     s.appendChild(o);
   });
+  runPredict();
 }
 
 // ── Chat ─────────────────────────────────────────────────────────
@@ -234,10 +214,14 @@ async function sendChat() {
   if (!msg) return;
   addMsg('user', msg); gid('chatInput').value = '';
   try {
-    const sensors = getSensors();
     const r = await fetch('/chat', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({message: msg, crop: currentCrop, stage: gid('stageSel').value, sensors})
+      body: JSON.stringify({
+        message: msg,
+        crop:    currentCrop,
+        stage:   gid('stageSel').value,
+        sensors: currentSensors          // ← uses currentSensors too
+      })
     });
     const d = await r.json();
     addMsg('bot', d.reply || 'No reply');
