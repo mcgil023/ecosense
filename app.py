@@ -14,8 +14,10 @@ except ImportError:
     GENAI_OK = False
 
 GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY","")
-CALLMEBOT_PHONE  = os.environ.get("CALLMEBOT_PHONE","")
-CALLMEBOT_APIKEY = os.environ.get("CALLMEBOT_APIKEY","")
+CALLMEBOT_PHONE  = os.environ.get("CALLMEBOT_PHONE","")   # kept for backward compat
+CALLMEBOT_APIKEY = os.environ.get("CALLMEBOT_APIKEY","")  # kept for backward compat
+TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_TOKEN","")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID","")
 WEATHER_API_KEY  = os.environ.get("WEATHER_API_KEY","")
 WEATHER_CITY     = os.environ.get("WEATHER_CITY","Tiruchirappalli")
 
@@ -64,16 +66,48 @@ def get_weather(city=WEATHER_CITY):
     except Exception as e:
         return {"enabled":False,"error":str(e)}
 
-def callmebot_send(text):
-    if not (CALLMEBOT_PHONE and CALLMEBOT_APIKEY):
-        return {"ok":False,"reason":"missing config"}
+def telegram_send(text):
+    """Send alert via Telegram Bot — instant setup, always reliable"""
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return {"ok":False,"reason":"TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not set"}
     try:
-        r = requests.get("https://api.callmebot.com/whatsapp.php",
-                         params={"phone":CALLMEBOT_PHONE,"apikey":CALLMEBOT_APIKEY,"text":text},
-                         timeout=15)
-        return {"ok":r.status_code==200,"status":r.status_code}
+        r = requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode":"HTML"},
+            timeout=15)
+        data = r.json()
+        ok = r.status_code == 200 and data.get("ok", False)
+        print(f"📲 Telegram → {'✅ sent' if ok else '❌ failed'} | {r.status_code}")
+        return {"ok": ok, "status": r.status_code, "response": str(data)[:200]}
+    except Exception as e:
+        print(f"⚠️  Telegram error: {e}")
+        return {"ok":False,"error":str(e)}
+
+def callmebot_send(text):
+    """Legacy WhatsApp via CallMeBot — use as fallback only"""
+    if not CALLMEBOT_PHONE or not CALLMEBOT_APIKEY:
+        return {"ok":False,"reason":"CALLMEBOT env vars not set"}
+    from urllib.parse import quote
+    phone = CALLMEBOT_PHONE.strip().replace(" ","")
+    if not phone.startswith("+"): phone = "+91" + phone
+    url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={quote(text)}&apikey={CALLMEBOT_APIKEY}"
+    try:
+        r = requests.get(url, timeout=20)
+        print(f"📱 CallMeBot → status {r.status_code}")
+        return {"ok": r.status_code==200, "status": r.status_code}
     except Exception as e:
         return {"ok":False,"error":str(e)}
+
+def send_alert(text):
+    """Try Telegram first; fall back to CallMeBot if configured"""
+    if TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
+        return telegram_send(text)
+    elif CALLMEBOT_PHONE and CALLMEBOT_APIKEY:
+        return send_alert(text)
+    else:
+        print("⚠️  No alert channel configured (set TELEGRAM_TOKEN+TELEGRAM_CHAT_ID in Render env)")
+        return {"ok":False,"reason":"no alert channel configured"}
+
 
 def predict(crop, stage, sd, weather=None):
     cfg = CC[crop]; sc = cfg["stages"][stage]
@@ -121,7 +155,7 @@ def send_alert_if_needed(crop,stage,sd,result,weather):
         w = f" Weather {weather.get('temp')}C, hum {weather.get('humidity')}%" if weather and weather.get("enabled") else ""
         text=(f"EcoSense Alert: {crop} {stage}. Health {result['health_status']} ({result['health_score']}/100). "
               f"Pump {'LOCKED' if result['pump_locked'] else 'OK'}. Gas {'DANGER' if result['gas_alert'] else 'CLEAR'}.{w}")
-        return callmebot_send(text)
+        return send_alert(text)
     return {"ok":False,"reason":"no alert"}
 
 # ── Routes ──────────────────────────────────────────────────
@@ -168,15 +202,18 @@ def chat():
     result = predict(crop,stage,sd,weather)
     if gemini_ready and gemini_client:
         try:
-            lang_str = "Tamil" if lang=="ta" else "simple English"
-            prompt = (f"Reply in {lang_str}. You are an expert smart farming AI assistant called EcoSense. "
+            lang_str = "Tamil (தமிழ்)" if lang=="ta" else "simple English"
+            lang_instruction = "நீங்கள் தமிழில் மட்டுமே பதில் சொல்ல வேண்டும். English பயன்படுத்தாதீர்கள்." if lang=="ta" else ""
+            prompt = (f"IMPORTANT INSTRUCTION: {lang_instruction if lang=='ta' else 'Reply in simple English only.'} "
+                      f"You are EcoSense, an expert smart farming AI assistant. "
                       f"Current crop: {crop}, growth stage: {stage}. "
                       f"Live sensor data: {sd}. "
                       f"Weather: {weather}. "
                       f"AI prediction: health={result['health_status']}({result['health_score']}/100), "
                       f"irrigate={result['irrigate_now']}, pump_locked={result['pump_locked']}, gas_alert={result['gas_alert']}. "
                       f"Farmer asks: {msg}. "
-                      f"Give a concise, practical, actionable answer in 2-3 sentences.")
+                      f"Give a concise, practical, actionable answer in 2-3 sentences. "
+                      f"{'MUST reply in Tamil (தமிழ்) language only. Do not use English at all.' if lang=='ta' else ''}")
             resp = gemini_client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
             return jsonify({"reply":resp.text.strip(),"source":"gemini"})
         except Exception as e:
@@ -188,11 +225,16 @@ def chat():
                f"Gas: {'DANGER' if result['gas_alert'] else 'Clear'}.")
     return jsonify({"reply":offline,"source":"offline"})
 
+@app.route("/test-whatsapp")
+def test_whatsapp():
+    result = send_alert("🌱 EcoSense Alert Test\nYour smart farm is connected! ✅\nAll systems active.")
+    return jsonify(result)
+
 @app.route("/status")
 def status():
     return jsonify({"gemini_ready":gemini_ready,"models_loaded":True,
                     "weather_enabled":bool(WEATHER_API_KEY),
-                    "callmebot_enabled":bool(CALLMEBOT_PHONE and CALLMEBOT_APIKEY)})
+                    "telegram_enabled":bool(TELEGRAM_TOKEN and TELEGRAM_CHAT_ID),"callmebot_enabled":bool(CALLMEBOT_PHONE and CALLMEBOT_APIKEY)})
 
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)))
