@@ -168,16 +168,19 @@ def chat():
     result = predict(crop,stage,sd,weather)
     if gemini_ready and gemini_client:
         try:
-            lang_str = "Tamil" if lang=="ta" else "simple English"
-            prompt = (f"Reply in {lang_str}. You are an expert smart farming AI assistant called EcoSense. "
+            lang_str = "Tamil (தமிழ்)" if lang=="ta" else "simple English"
+            lang_instruction = "நீங்கள் தமிழில் மட்டுமே பதில் சொல்ல வேண்டும். English பயன்படுத்தாதீர்கள்." if lang=="ta" else ""
+            prompt = (f"IMPORTANT INSTRUCTION: {lang_instruction if lang=='ta' else 'Reply in simple English only.'} "
+                      f"You are EcoSense, an expert smart farming AI assistant. "
                       f"Current crop: {crop}, growth stage: {stage}. "
                       f"Live sensor data: {sd}. "
                       f"Weather: {weather}. "
                       f"AI prediction: health={result['health_status']}({result['health_score']}/100), "
                       f"irrigate={result['irrigate_now']}, pump_locked={result['pump_locked']}, gas_alert={result['gas_alert']}. "
                       f"Farmer asks: {msg}. "
-                      f"Give a concise, practical, actionable answer in 2-3 sentences.")
-            resp = gemini_client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+                      f"Give a concise, practical, actionable answer in 2-3 sentences. "
+                      f"{'MUST reply in Tamil (தமிழ்) language only. Do not use English at all.' if lang=='ta' else ''}")
+            resp = gemini_client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
             return jsonify({"reply":resp.text.strip(),"source":"gemini"})
         except Exception as e:
             print(f"Gemini chat error: {e}")

@@ -177,3 +177,32 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ═══ FARMER STATES ═════════════════════════════════════════ */
+.farmer-svg { animation: farmer-bob 2.5s ease-in-out infinite; }
+
+.fs-good     { filter: drop-shadow(0 0 16px rgba(76,175,80,0.55));  animation: farmer-bob 2.5s ease-in-out infinite !important; }
+.fs-moderate { filter: drop-shadow(0 0 16px rgba(255,167,38,0.5));  animation: farmer-bob 3.5s ease-in-out infinite !important; }
+.fs-poor     { filter: drop-shadow(0 0 16px rgba(239,83,80,0.5));   animation: farmer-anxious 1.8s ease-in-out infinite !important; }
+.fs-critical { filter: drop-shadow(0 0 22px rgba(183,28,28,0.85));  animation: farmer-shake 0.28s linear infinite !important; }
+.fs-gas      { filter: drop-shadow(0 0 18px rgba(171,71,188,0.65)); animation: farmer-anxious 1.1s ease-in-out infinite !important; }
+
+@keyframes farmer-bob     { 0%,100%{transform:translateY(0)}                    50%{transform:translateY(-7px)} }
+@keyframes farmer-anxious { 0%,100%{transform:translateY(0) rotate(-2deg)}      50%{transform:translateY(-3px) rotate(2deg)} }
+@keyframes farmer-shake   { 0%,100%{transform:translateX(0) rotate(0)}          25%{transform:translateX(-5px) rotate(-1deg)}  75%{transform:translateX(5px) rotate(1deg)} }
+
+.fstate { display:none }
+.fstate.active { display:block }
+
+/* State label badge */
+.farmer-state-badge {
+  text-align:center; font-size:0.72rem; font-weight:700;
+  padding:3px 12px; border-radius:999px; margin:4px auto 0;
+  width:fit-content; letter-spacing:1px;
+  transition: all 0.4s;
+}
+.farmer-state-badge.good     { background:rgba(76,175,80,0.2);  border:1px solid rgba(76,175,80,0.5);  color:#a5d6a7; }
+.farmer-state-badge.moderate { background:rgba(255,167,38,0.15);border:1px solid rgba(255,167,38,0.5); color:#ffd54f; }
+.farmer-state-badge.poor     { background:rgba(239,83,80,0.15); border:1px solid rgba(239,83,80,0.5);  color:#ef9a9a; }
+.farmer-state-badge.critical { background:rgba(183,28,28,0.2);  border:1px solid rgba(183,28,28,0.6);  color:#ff8a80; }
+.farmer-state-badge.gas      { background:rgba(171,71,188,0.15);border:1px solid rgba(171,71,188,0.5); color:#ce93d8; }
