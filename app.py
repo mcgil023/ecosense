@@ -118,8 +118,13 @@ def crops_route():
 
 @app.route("/predict",methods=["POST"])
 def predict_route():
-    d=request.json; weather=get_weather()
-    result=predict(d["crop"],d["stage"],d["sensors"],weather)
+    d = request.json or {}
+    weather = get_weather()
+    # Merge live ESP32 data into sensors (ESP32 data takes priority if available)
+    sensors = dict(d.get("sensors", {}))
+    if esp32_data:
+        sensors.update(esp32_data)   # live ESP32 values override UI defaults
+    result = predict(d.get("crop","rice"), d.get("stage","germination"), sensors, weather)
     return jsonify(result)
 
 @app.route("/weather")
@@ -127,9 +132,14 @@ def weather_route():
     return jsonify(get_weather())
 
 @app.route("/esp32",methods=["POST"])
+@app.route("/data",methods=["POST"])   # alias — ESP32 can use either URL
 def receive_esp32():
-    global esp32_data; esp32_data=request.json
-    return jsonify({"status":"ok"})
+    global esp32_data
+    raw = request.json or {}
+    # Accept both flat format {soil_moisture:72} and nested {sensors:{...}}
+    esp32_data = raw.get("sensors", raw)
+    print(f"📡 ESP32 data received: {list(esp32_data.keys())}")
+    return jsonify({"status":"ok","fields_received":list(esp32_data.keys())})
 
 @app.route("/live")
 def live():
