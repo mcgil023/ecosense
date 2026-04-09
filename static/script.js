@@ -121,6 +121,7 @@ function updateUI(r){
   document.getElementById('hs-label').textContent=r.health_status;
   document.getElementById('hs-label').style.color=fill.style.stroke;
   document.getElementById('hs-conf').textContent=`Confidence ${r.confidence_pct}%`;
+  updateFarmerState(r);
   const adv={GOOD:`✅ Good health. Moisture ${Math.round(sd.soil_moisture)}%, TDS ${r.tds_safe?'safe':'high'}. ${r.irrigate_now?'Irrigation recommended.':'No irrigation needed.'}`,MODERATE:`⚠️ Moderate. Monitor closely. ${r.irrigate_now?'Irrigate soon.':'Hold irrigation.'} Check nutrients.`,POOR:`🔴 Poor health — action needed. ${r.gas_alert?'Gas detected — ventilate. ':''}${!r.tds_safe?'Switch to fresh water. ':''}`,CRITICAL:`🚨 CRITICAL! ${r.pump_locked?'Pump locked. ':''}${r.gas_alert?'Toxic gas! ':''}Call agricultural expert.`};
   document.getElementById('ai-advice').textContent=adv[r.health_status]||'Analyzing...';
   setChip('dc-irrigate','dv-irrigate',r.irrigate_now,r.irrigate_now?'NOW ✅':'NO',r.irrigate_now?'yes':'');
@@ -150,8 +151,58 @@ function setChip(chipId,valId,active,txt,cls){
   const v=document.getElementById(valId); if(v)v.textContent=txt;
 }
 
+
+/* ── Farmer state switcher ── */
+function updateFarmerState(r) {
+  let state = 'good';
+  if (r.gas_alert)                      state = 'gas';
+  else if (r.health_status==='CRITICAL') state = 'critical';
+  else if (r.health_status==='POOR')     state = 'poor';
+  else if (r.health_status==='MODERATE') state = 'moderate';
+
+  // toggle SVG groups
+  document.querySelectorAll('.fstate').forEach(g => g.classList.remove('active'));
+  const el = document.getElementById('fs-'+state);
+  if (el) el.classList.add('active');
+
+  // update SVG class for glow+animation
+  const svg = document.getElementById('farmer-main');
+  if (svg) svg.className = `farmer-svg fs-${state}`;
+
+  // update badge
+  const badge = document.getElementById('farmer-badge');
+  const labels = {
+    good:     ['🌱 HEALTHY',   'good'],
+    moderate: ['🤔 CONCERNED', 'moderate'],
+    poor:     ['😰 STRESSED',  'poor'],
+    critical: ['🚨 CRITICAL',  'critical'],
+    gas:      ['😷 GAS DANGER','gas']
+  };
+  if (badge && labels[state]) {
+    badge.textContent  = labels[state][0];
+    badge.className    = `farmer-state-badge ${labels[state][1]}`;
+  }
+}
+
 /* ── lang ── */
-function toggleLang(){currentLang=currentLang==='en'?'ta':'en';document.getElementById('lang-txt').textContent=currentLang==='en'?'தமிழ்':'English';}
+function toggleLang(){
+  currentLang = currentLang === 'en' ? 'ta' : 'en';
+  const btn  = document.querySelector('.lang-toggle');
+  const span = document.getElementById('lang-txt');
+  if(currentLang === 'ta'){
+    span.textContent = '🟢 தமிழ் ON';
+    btn.style.background    = 'rgba(76,175,80,0.2)';
+    btn.style.borderColor   = '#4caf50';
+    btn.style.color         = '#66bb6a';
+    appendMsg('bot','🌐 Language switched to Tamil. Now I will reply in Tamil! / இப்போது தமிழில் பதில் சொல்கிறேன்!','system');
+  } else {
+    span.textContent = 'தமிழ்';
+    btn.style.background  = '';
+    btn.style.borderColor = '';
+    btn.style.color       = '';
+    appendMsg('bot','🌐 Language switched back to English.','system');
+  }
+}
 
 /* ── chat ── */
 function qa(msg){document.getElementById('chat-in').value=msg;sendChat();}
