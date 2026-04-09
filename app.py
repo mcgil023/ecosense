@@ -251,6 +251,29 @@ def predict(crop, stage, sensors, weather):
                 "confidence_pct":70,"is_critical_stage":False,
                 "weather_note":"","sensors_used":{}}
 
+# ── Tamil offline reply translator ───────────────────────────
+def translate_offline_ta(msg, result, sd, crop, cfg):
+    hs   = result.get("health_status","MODERATE")
+    mst  = round(sd.get("soil_moisture",0))
+    tmp  = round(sd.get("air_temp_c",0),1)
+    tds  = round(sd.get("tds_ppm",0))
+    crop_ta = {"rice":"நெல்","maize":"மக்காச்சோளம்","groundnut":"நிலக்கடலை",
+               "sugarcane":"கரும்பு","coconut":"தேங்காய்"}.get(crop, crop)
+    hs_ta   = {"GOOD":"நல்லது","MODERATE":"நடுத்தரம்","POOR":"மோசம்","CRITICAL":"அவசரம்"}.get(hs,hs)
+
+    if result.get("irrigate_now"):
+        return f"இப்போது நீர் பாய்ச்சுங்கள்! மண் ஈரப்பதம் {mst}% — {crop_ta}க்கு தேவையான அளவை விட குறைவாக உள்ளது."
+    elif result.get("gas_alert"):
+        return f"வாயு எச்சரிக்கை! வயலில் இருந்து விலகி காற்றோட்டம் செய்யுங்கள்."
+    elif not result.get("tds_safe"):
+        return f"பம்ப் தடுக்கப்பட்டுள்ளது — நீரில் TDS அளவு அதிகம் ({tds} ppm). சுத்தமான நீர் பயன்படுத்துங்கள்."
+    elif result.get("pump_on"):
+        return f"பம்ப் இயங்குகிறது. {crop_ta} தண்ணீர் தேவைப்படுகிறது."
+    elif tmp > 38:
+        return f"வெப்பம் அதிகமாக உள்ளது ({tmp}°C). பயிரை கவனியுங்கள்."
+    else:
+        return f"{crop_ta} ஆரோக்கியம்: {result.get('health_score',50)}/100 ({hs_ta}). மண் ஈரப்பதம்: {mst}%."
+
 # ── Routes ────────────────────────────────────────────────────
 @app.route("/")
 def index(): return render_template("index.html")
@@ -306,6 +329,7 @@ def chat():
         msg     = d.get("message","").strip()
         crop    = d.get("crop","rice")
         stage   = d.get("stage","germination")
+        lang    = d.get("lang","ta")
         sensors = dict(d.get("sensors",{}))
         if esp32_data: sensors.update(esp32_data)
         result  = predict(crop, stage, sensors, get_weather())
@@ -358,13 +382,16 @@ def chat():
                     f"Irrigate: {result['irrigate_now']}, Gas alert: {result['gas_alert']}. "
                     f"Forecast: {result.get('weather_note','')}. "
                     f"Farmer asks: \"{msg}\". "
-                    f"Reply in simple farmer-friendly language. 2 sentences max. No jargon."
+                    f"Reply in {'Tamil language (தமிழில் பதில் சொல்லுங்கள்)' if lang=='ta' else 'simple English'}. 2 short sentences max. Farmer-friendly, no jargon."
                 )
                 resp = gemini_client.generate_content(prompt)
                 return jsonify({"reply":resp.text.strip(),"source":"gemini"})
             except Exception as e:
                 print(f"⚠️ Gemini: {e}")
 
+        # Translate offline reply to Tamil if needed
+        if lang == 'ta':
+            offline = translate_offline_ta(offline, result, sd, crop, cfg)
         return jsonify({"reply":offline.strip(),"source":"offline"})
     except Exception as e:
         print(f"❌ /chat: {e}")

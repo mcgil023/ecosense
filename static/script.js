@@ -78,7 +78,7 @@ const LANG = {
     weatherLoading: "🌥 வானிலை ஏற்றுகிறது...",
   }
 };
-let currentLang = 'en';
+let currentLang = 'ta';
 
 function T(key, sub) {
   const l = LANG[currentLang];
@@ -286,10 +286,10 @@ async function runPredict() {
       'CRITICAL': '💀 CRITICAL'
     };
     const adviceMap = {
-      'GOOD':     '✅ Crop looks healthy. Keep monitoring.',
-      'MODERATE': '⚠️ Crop needs attention. Check moisture & temperature.',
-      'POOR':     '🔴 Crop is struggling. Irrigate and inspect field.',
-      'CRITICAL': '💀 CRITICAL — Immediate action required!'
+      'GOOD':     '✅ பயிர் ஆரோக்கியமாக உள்ளது. தொடர்ந்து கண்காணியுங்கள்.',
+      'MODERATE': '⚠️ பயிருக்கு கவனிப்பு தேவை. ஈரப்பதம் & வெப்பம் சரிபாருங்கள்.',
+      'POOR':     '🔴 பயிர் கஷ்டப்படுகிறது. நீர் பாய்ச்சி வயலை சோதியுங்கள்.',
+      'CRITICAL': '💀 அவசரம் — உடனடி நடவடிக்கை தேவை!'
     };
 
     // Update score
@@ -508,7 +508,8 @@ async function sendChat() {
       body: JSON.stringify({
         message: msg, crop: currentCrop,
         stage:   stageEl ? stageEl.value : 'germination',
-        sensors: currentSensors
+        sensors: currentSensors,
+        lang:    'ta'
       })
     });
     const d = await r.json();
