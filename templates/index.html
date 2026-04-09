@@ -13,6 +13,12 @@
     <div class="crop-tabs" id="crop-tabs"></div>
     <div class="stage-wrap">Stage <select id="stageSel"></select></div>
     <div class="top-right">
+      <!-- MODE SWITCH -->
+      <div class="mode-switch">
+        <button id="btn-live" class="mode-btn" onclick="setMode('live')">📡 Live</button>
+        <button id="btn-sim"  class="mode-btn active-mode" onclick="setMode('sim')">🎛️ Sim</button>
+        <span id="modeTag" class="mode-tag">🎛️ SIM</span>
+      </div>
       <span class="ai-badge" id="aiBadge">🤖 AI</span>
       <span class="weather-pill" id="weatherPill">☁️ --°C</span>
       <span class="clock" id="clock">--:--:--</span>
@@ -39,7 +45,7 @@
       <div class="hero-row">
         <div class="farmer-box"><div id="farmerState" class="farmer-state">👨‍🌾</div></div>
         <div class="health-tag" id="healthTag">🌱 HEALTHY</div>
-        <div class="health-ring"><div id="scoreText">--</div><small>/100<br>Confidence -</small></div>
+        <div class="health-ring"><div id="scoreText">--</div><small>/100<br><span id="confText">Confidence -</span></small></div>
       </div>
       <div class="weather-strip" id="weatherStrip">Tiruchirappalli: --°C · Humidity --% · Rain 0mm · Wind --m/s</div>
       <div class="advice-box"><div class="title">🤖 AI Field Advice</div><div id="adviceText">Select crop & stage to begin...</div></div>
@@ -67,13 +73,13 @@
       </div>
       <div class="chat-input-row">
         <input id="chatInput" placeholder="Ask anything about your crop..." />
-        <button id="sendBtn" onclick="sendChat()">➤</button>
+        <button onclick="sendChat()">➤</button>
       </div>
     </aside>
   </main>
 
   <footer class="simbar" id="simbar">
-    <div class="sim-left">🎛️ <strong>Sensor Simulator</strong> <span>Click to expand · Fine-tune all sensor values</span></div>
+    <div class="sim-left">🎛️ <strong>Sensor Simulator</strong> <span>Click scenario to apply</span></div>
     <div class="scenario-chips">
       <button onclick="setScenario('normal')">✅ Normal</button>
       <button onclick="setScenario('dry')">🔥 Dry</button>
@@ -84,9 +90,11 @@
     </div>
   </footer>
 
-  <div class="hidden-inputs" style="display:none">
-    <input id="s-moist-v" value="72"><input id="s-tds-v" value="350"><input id="s-air-v" value="28">
-    <input id="s-hum-v" value="65"><input id="s-soiltemp-v" value="24"><input id="s-mq135-v" value="50">
+  <!-- Hidden inputs hold current sensor values -->
+  <div style="display:none">
+    <input id="s-moist-v" value="72"><input id="s-tds-v" value="350">
+    <input id="s-air-v" value="28"><input id="s-hum-v" value="65">
+    <input id="s-soiltemp-v" value="24"><input id="s-mq135-v" value="50">
     <input id="s-mq4-v" value="200"><input id="s-mq7-v" value="10">
   </div>
 </div>
