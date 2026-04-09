@@ -11,6 +11,10 @@ services:
         sync: false
       - key: WEATHER_CITY
         sync: false
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
       - key: CALLMEBOT_PHONE
         sync: false
       - key: CALLMEBOT_APIKEY
