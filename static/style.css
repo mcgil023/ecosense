@@ -565,3 +565,103 @@ html, body {
   border-color: var(--green);
   font-weight: 700;
 }
+
+/* ── Animated Crop Face ─────────────────────────────────────── */
+.crop-face-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.crop-face {
+  width: 72px;
+  height: 72px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG crop face base */
+.crop-svg { width: 72px; height: 72px; }
+
+/* GOOD — bouncing happy crop */
+.face-good .crop-svg { animation: bounce 1.2s ease-in-out infinite; }
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* MODERATE — slow sway worried */
+.face-moderate .crop-svg { animation: sway 1.8s ease-in-out infinite; }
+@keyframes sway {
+  0%,100% { transform: rotate(0deg); }
+  33%     { transform: rotate(-6deg); }
+  66%     { transform: rotate(6deg); }
+}
+
+/* POOR — drooping wilt */
+.face-poor .crop-svg { animation: droop 2s ease-in-out infinite; }
+@keyframes droop {
+  0%,100% { transform: rotate(-8deg) translateY(0); }
+  50%     { transform: rotate(-8deg) translateY(4px); }
+}
+
+/* CRITICAL — shake danger */
+.face-critical .crop-svg { animation: shake 0.4s ease-in-out infinite; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-4px) rotate(-3deg); }
+  75%     { transform: translateX(4px)  rotate(3deg); }
+}
+
+.health-tag {
+  font-size: 15px;
+  font-weight: 800;
+  padding: 6px 16px;
+  border-radius: 25px;
+  border: 2px solid var(--green);
+  color: var(--green);
+  background: var(--green-dk);
+  letter-spacing: 1px;
+  text-align: center;
+  transition: all .4s;
+  white-space: nowrap;
+}
+.health-tag.moderate { color: var(--yellow); border-color: var(--yellow); background: #2a2000; }
+.health-tag.poor     { color: var(--orange); border-color: var(--orange); background: #2a1200; }
+.health-tag.critical { color: var(--red);    border-color: var(--red);    background: #2a0a0a;
+                       animation: pulse-red .6s ease-in-out infinite; }
+@keyframes pulse-red {
+  0%,100% { box-shadow: 0 0 0 rgba(231,76,60,0); }
+  50%     { box-shadow: 0 0 12px rgba(231,76,60,.6); }
+}
+
+/* Ring text fix — make it always visible */
+.ring-score {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff !important;
+  text-shadow: 0 0 8px rgba(0,0,0,.8);
+  line-height: 1;
+}
+.ring-label {
+  font-size: 10px;
+  color: #aaaaaa !important;
+  letter-spacing: 0.5px;
+}
+.ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Chat head rename */
+.chat-head-title { font-size: 13px; font-weight: 700; color: var(--green); }

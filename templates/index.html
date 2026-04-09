@@ -117,7 +117,29 @@
           </div>
         </div>
 
-        <div class="health-tag-box">
+        <div class="crop-face-wrap">
+          <!-- Animated Crop Face -->
+          <div class="crop-face face-good" id="cropFace">
+            <svg class="crop-svg" id="cropSvg" viewBox="0 0 80 80">
+              <!-- Stem -->
+              <line x1="40" y1="72" x2="40" y2="48" stroke="#2ecc71" stroke-width="3.5" stroke-linecap="round"/>
+              <!-- Leaves -->
+              <ellipse cx="30" cy="56" rx="10" ry="5" fill="#27ae60" transform="rotate(-30 30 56)"/>
+              <ellipse cx="50" cy="60" rx="10" ry="5" fill="#27ae60" transform="rotate(30 50 60)"/>
+              <!-- Head (pot) -->
+              <ellipse cx="40" cy="38" rx="18" ry="18" fill="#1a5c2a" stroke="#2ecc71" stroke-width="2"/>
+              <!-- Face: Eyes -->
+              <circle id="eye-l" cx="33" cy="35" r="2.8" fill="#2ecc71"/>
+              <circle id="eye-r" cx="47" cy="35" r="2.8" fill="#2ecc71"/>
+              <!-- Face: Mouth (happy curve) -->
+              <path id="mouth" d="M33 43 Q40 50 47 43" stroke="#2ecc71" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <!-- Sparkles (good only) -->
+              <g id="sparkles">
+                <text x="8"  y="20" font-size="10" opacity="0.9">✨</text>
+                <text x="58" y="15" font-size="10" opacity="0.9">✨</text>
+              </g>
+            </svg>
+          </div>
           <div class="health-tag" id="healthTag">🌱 LOADING...</div>
         </div>
       </div>
@@ -169,7 +191,7 @@
     <!-- RIGHT: Chat -->
     <aside class="right-panel">
       <div class="chat-head">
-        <span class="chat-head-title">🌿 Farming AI</span>
+        <span class="chat-head-title">🌿 AI Farming Companion</span>
         <div class="chat-status-dot">
           <div class="dot" id="chatDot"></div>
           <span id="chatStatus">OFFLINE</span>
@@ -177,7 +199,7 @@
       </div>
 
       <div class="chat-box" id="chatBox">
-        <div class="bot">👋 Hello! I'm your AI farming assistant. Ask me anything about your crop!</div>
+        <div class="bot">👋 Hi! I'm your AI Farming Companion. Ask me anything — I'll keep it simple! 🌱</div>
       </div>
 
       <div class="quick-grid">
@@ -190,7 +212,7 @@
       </div>
 
       <div class="chat-input-row">
-        <input id="chatInput" placeholder="Ask about your crop..." />
+        <input id="chatInput" placeholder="Ask me anything about your farm..." />
         <button onclick="sendChat()">➤</button>
       </div>
     </aside>
