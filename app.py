@@ -425,6 +425,10 @@ def stream():
                  "Access-Control-Allow-Origin":"*"}
     )
 
+@app.route("/healthz")
+def healthz():
+    return "ok", 200
+
 @app.route("/status")
 def status():
     return jsonify({
