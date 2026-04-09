@@ -11,30 +11,16 @@ import pandas as pd
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 gemini_client = None
 
-try:
-    import google.generativeai as genai
-    if GEMINI_API_KEY:
+if GEMINI_API_KEY:
+    try:
+        import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
         gemini_client = genai.GenerativeModel("gemini-2.0-flash")
-        print("✅ Gemini ready (google-generativeai)")
-    else:
-        print("⚠️  GEMINI_API_KEY not set — chat will use offline mode")
-except ImportError:
-    try:
-        from google import genai as ggenai
-        if GEMINI_API_KEY:
-            _c = ggenai.Client(api_key=GEMINI_API_KEY)
-            class _Wrap:
-                def __init__(self, c): self._c = c
-                def generate_content(self, prompt):
-                    r = self._c.models.generate_content(model="gemini-2.0-flash", contents=prompt)
-                    class _R:
-                        def __init__(self, t): self.text = t
-                    return _R(r.text)
-            gemini_client = _Wrap(_c)
-            print("✅ Gemini ready (google-genai)")
+        print("✅ Gemini ready")
     except Exception as e:
-        print(f"❌ Gemini not available: {e}")
+        print(f"❌ Gemini init failed: {e}")
+else:
+    print("⚠️  GEMINI_API_KEY not set — chat will use offline mode")
 
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
 WEATHER_CITY    = os.environ.get("WEATHER_CITY", "Tiruchirappalli")
@@ -140,7 +126,7 @@ def predict(crop, stage, sensors, weather):
             print(f"⚠️  ML predict failed: {e}")
 
     irrigate_now = sd["soil_moisture"] < sc["moist_min"] and not gas_alert
-    pump_locked  = gas_alert or hs == "CRITICAL"
+    pump_locked  = gas_alert or hs == "CRITICAL" or not tds_safe
     pump_on      = irrigate_now and not pump_locked
 
     hist_m = list(history["soil_moisture"])
