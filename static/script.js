@@ -1,5 +1,5 @@
 
-let currentLang='en', currentCrop='rice', cropStages={};
+let currentCrop='rice', cropStages={};
 const SIM_H=46, SIM_EXP=260;
 
 const SCENARIOS={
@@ -185,45 +185,7 @@ function updateFarmerState(r) {
 }
 
 
-/* ── WhatsApp test ── */
-function testWhatsApp(){
-  const btn = document.querySelector('.wa-test-btn');
-  const msg = document.getElementById('wa-text');
-  btn.textContent = '⏳';
-  fetch('/test-whatsapp').then(r=>r.json()).then(res=>{
-    if(res.ok){
-      btn.textContent = '✅';
-      msg.style.color = '#66bb6a';
-      msg.textContent = '✅ WhatsApp test sent! Check your phone.';
-      setTimeout(()=>{ btn.textContent='🧪'; msg.style.color=''; }, 4000);
-    } else {
-      btn.textContent = '❌';
-      msg.style.color = '#ef5350';
-      msg.textContent = '❌ Failed: ' + (res.reason || res.error || 'Check env vars');
-      setTimeout(()=>{ btn.textContent='🧪'; msg.style.color=''; }, 5000);
-    }
-  }).catch(()=>{ btn.textContent='❌'; msg.textContent='Connection error'; });
-}
 
-/* ── lang ── */
-function toggleLang(){
-  currentLang = currentLang === 'en' ? 'ta' : 'en';
-  const btn  = document.querySelector('.lang-toggle');
-  const span = document.getElementById('lang-txt');
-  if(currentLang === 'ta'){
-    span.textContent = '🟢 தமிழ் ON';
-    btn.style.background    = 'rgba(76,175,80,0.2)';
-    btn.style.borderColor   = '#4caf50';
-    btn.style.color         = '#66bb6a';
-    appendMsg('bot','🌐 Language switched to Tamil. Now I will reply in Tamil! / இப்போது தமிழில் பதில் சொல்கிறேன்!','system');
-  } else {
-    span.textContent = 'தமிழ்';
-    btn.style.background  = '';
-    btn.style.borderColor = '';
-    btn.style.color       = '';
-    appendMsg('bot','🌐 Language switched back to English.','system');
-  }
-}
 
 /* ── chat ── */
 function qa(msg){document.getElementById('chat-in').value=msg;sendChat();}
@@ -233,7 +195,7 @@ function sendChat(){
   const stage=document.getElementById('stage-select').value;
   document.getElementById('typing').classList.remove('hidden');
   fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({message:msg,crop:currentCrop,stage,sensors:getSensors(),lang:currentLang})
+    body:JSON.stringify({message:msg,crop:currentCrop,stage,sensors:getSensors()})
   }).then(r=>r.json()).then(res=>{document.getElementById('typing').classList.add('hidden');appendMsg('bot',res.reply,res.source);})
   .catch(()=>{document.getElementById('typing').classList.add('hidden');appendMsg('bot','Connection error.','system');});
 }

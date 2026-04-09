@@ -14,10 +14,7 @@ except ImportError:
     GENAI_OK = False
 
 GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY","")
-CALLMEBOT_PHONE  = os.environ.get("CALLMEBOT_PHONE","")   # kept for backward compat
-CALLMEBOT_APIKEY = os.environ.get("CALLMEBOT_APIKEY","")  # kept for backward compat
-TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_TOKEN","")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID","")
+
 WEATHER_API_KEY  = os.environ.get("WEATHER_API_KEY","")
 WEATHER_CITY     = os.environ.get("WEATHER_CITY","Tiruchirappalli")
 
@@ -66,48 +63,6 @@ def get_weather(city=WEATHER_CITY):
     except Exception as e:
         return {"enabled":False,"error":str(e)}
 
-def telegram_send(text):
-    """Send alert via Telegram Bot — instant setup, always reliable"""
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        return {"ok":False,"reason":"TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not set"}
-    try:
-        r = requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-            json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode":"HTML"},
-            timeout=15)
-        data = r.json()
-        ok = r.status_code == 200 and data.get("ok", False)
-        print(f"📲 Telegram → {'✅ sent' if ok else '❌ failed'} | {r.status_code}")
-        return {"ok": ok, "status": r.status_code, "response": str(data)[:200]}
-    except Exception as e:
-        print(f"⚠️  Telegram error: {e}")
-        return {"ok":False,"error":str(e)}
-
-def callmebot_send(text):
-    """Legacy WhatsApp via CallMeBot — use as fallback only"""
-    if not CALLMEBOT_PHONE or not CALLMEBOT_APIKEY:
-        return {"ok":False,"reason":"CALLMEBOT env vars not set"}
-    from urllib.parse import quote
-    phone = CALLMEBOT_PHONE.strip().replace(" ","")
-    if not phone.startswith("+"): phone = "+91" + phone
-    url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={quote(text)}&apikey={CALLMEBOT_APIKEY}"
-    try:
-        r = requests.get(url, timeout=20)
-        print(f"📱 CallMeBot → status {r.status_code}")
-        return {"ok": r.status_code==200, "status": r.status_code}
-    except Exception as e:
-        return {"ok":False,"error":str(e)}
-
-def send_alert(text):
-    """Try Telegram first; fall back to CallMeBot if configured"""
-    if TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
-        return telegram_send(text)
-    elif CALLMEBOT_PHONE and CALLMEBOT_APIKEY:
-        return send_alert(text)
-    else:
-        print("⚠️  No alert channel configured (set TELEGRAM_TOKEN+TELEGRAM_CHAT_ID in Render env)")
-        return {"ok":False,"reason":"no alert channel configured"}
-
 
 def predict(crop, stage, sd, weather=None):
     cfg = CC[crop]; sc = cfg["stages"][stage]
@@ -150,13 +105,6 @@ def predict(crop, stage, sd, weather=None):
             "trend_moisture":trend,"timestamp":datetime.now().strftime("%H:%M:%S"),
             "weather":weather or {}}
 
-def send_alert_if_needed(crop,stage,sd,result,weather):
-    if result["gas_alert"] or result["pump_locked"] or result["health_status"]=="CRITICAL":
-        w = f" Weather {weather.get('temp')}C, hum {weather.get('humidity')}%" if weather and weather.get("enabled") else ""
-        text=(f"EcoSense Alert: {crop} {stage}. Health {result['health_status']} ({result['health_score']}/100). "
-              f"Pump {'LOCKED' if result['pump_locked'] else 'OK'}. Gas {'DANGER' if result['gas_alert'] else 'CLEAR'}.{w}")
-        return send_alert(text)
-    return {"ok":False,"reason":"no alert"}
 
 # ── Routes ──────────────────────────────────────────────────
 @app.route("/")
@@ -173,7 +121,6 @@ def crops_route():
 def predict_route():
     d=request.json; weather=get_weather()
     result=predict(d["crop"],d["stage"],d["sensors"],weather)
-    send_alert_if_needed(d["crop"],d["stage"],d["sensors"],result,weather)
     return jsonify(result)
 
 @app.route("/weather")
@@ -195,40 +142,28 @@ def chat():
     crop  = request.json.get("crop","rice")
     stage = request.json.get("stage","")
     sd    = request.json.get("sensors",{})
-    lang  = request.json.get("lang","en")
     weather = get_weather()
     if not stage:
         return jsonify({"reply":"Please select a crop and growth stage first.","source":"system"})
     result = predict(crop,stage,sd,weather)
     if gemini_ready and gemini_client:
         try:
-            lang_str = "Tamil (தமிழ்)" if lang=="ta" else "simple English"
-            lang_instruction = "நீங்கள் தமிழில் மட்டுமே பதில் சொல்ல வேண்டும். English பயன்படுத்தாதீர்கள்." if lang=="ta" else ""
-            prompt = (f"IMPORTANT INSTRUCTION: {lang_instruction if lang=='ta' else 'Reply in simple English only.'} "
-                      f"You are EcoSense, an expert smart farming AI assistant. "
-                      f"Current crop: {crop}, growth stage: {stage}. "
-                      f"Live sensor data: {sd}. "
-                      f"Weather: {weather}. "
-                      f"AI prediction: health={result['health_status']}({result['health_score']}/100), "
-                      f"irrigate={result['irrigate_now']}, pump_locked={result['pump_locked']}, gas_alert={result['gas_alert']}. "
+            prompt = (f"You are EcoSense, a smart farming assistant. "
+                      f"Crop: {crop}, Stage: {stage}. "
+                      f"Moisture: {sd.get('soil_moisture',0):.0f}%, TDS: {sd.get('tds_ppm',0):.0f}ppm, "
+                      f"Temp: {sd.get('air_temp_c',0):.1f}C, Humidity: {sd.get('humidity_pct',0):.0f}%. "
+                      f"Health: {result['health_status']} ({result['health_score']}/100). "
+                      f"Irrigate: {result['irrigate_now']}, Pump locked: {result['pump_locked']}, Gas alert: {result['gas_alert']}. "
                       f"Farmer asks: {msg}. "
-                      f"Give a concise, practical, actionable answer in 2-3 sentences. "
-                      f"{'MUST reply in Tamil (தமிழ்) language only. Do not use English at all.' if lang=='ta' else ''}")
+                      f"Reply in 1-2 short simple sentences only. Be direct. No technical jargon.")
             resp = gemini_client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
             return jsonify({"reply":resp.text.strip(),"source":"gemini"})
         except Exception as e:
             print(f"Gemini chat error: {e}")
     hs = result["health_status"]; sc = result["health_score"]
-    offline = (f"Health: {hs} ({sc}/100). Moisture: {sd.get('soil_moisture',0):.0f}%. "
-               f"TDS: {sd.get('tds_ppm',0):.0f} ppm ({'Safe' if result['tds_safe'] else 'High'}). "
-               f"Pump: {'LOCKED' if result['pump_locked'] else ('ON' if result['pump_on'] else 'OFF')}. "
-               f"Gas: {'DANGER' if result['gas_alert'] else 'Clear'}.")
-    return jsonify({"reply":offline,"source":"offline"})
-
-@app.route("/test-whatsapp")
-def test_whatsapp():
-    result = send_alert("🌱 EcoSense Alert Test\nYour smart farm is connected! ✅\nAll systems active.")
-    return jsonify(result)
+    tips = {"GOOD":"Crop looks healthy. Keep monitoring.", "MODERATE":"Crop needs attention. Check moisture and nutrients.", "POOR":"Crop is struggling. Take action soon.", "CRITICAL":"Urgent! Crop is in critical condition."}
+    offline = f"{tips.get(hs,'')} Moisture: {sd.get('soil_moisture',0):.0f}%. {'Irrigate now.' if result['irrigate_now'] else ''} {'Gas danger!' if result['gas_alert'] else ''}"
+    return jsonify({"reply":offline.strip(),"source":"offline"})
 
 @app.route("/status")
 def status():
