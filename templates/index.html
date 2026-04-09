@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EcoSense</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EcoSense — AI Smart Farming</title>
+  <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body>
 <div class="app-shell">
+
+  <!-- ── TOPBAR ──────────────────────────────────────────── -->
   <header class="topbar">
-    <div class="brand">🌱 <strong>EcoSense</strong></div>
+    <div class="brand">🌱 EcoSense</div>
     <div class="crop-tabs" id="crop-tabs"></div>
-    <div class="stage-wrap">Stage <select id="stageSel"></select></div>
+    <div class="stage-wrap">
+      <span>Stage</span>
+      <select id="stageSel"></select>
+    </div>
     <div class="top-right">
-      <!-- MODE SWITCH -->
       <div class="mode-switch">
         <button id="btn-live" class="mode-btn" onclick="setMode('live')">📡 Live</button>
         <button id="btn-sim"  class="mode-btn active-mode" onclick="setMode('sim')">🎛️ Sim</button>
@@ -25,78 +29,186 @@
     </div>
   </header>
 
-  <main class="main-grid">
+  <!-- ── MAIN GRID ────────────────────────────────────────── -->
+  <div class="main-grid">
+
+    <!-- LEFT: Sensors -->
     <aside class="left-panel">
-      <h3>🕊 LIVE SENSOR READINGS</h3>
-      <div class="sensor-card"><div>💧 Soil Moisture</div><div id="v-moist">—</div><div class="bar"><span id="b-moist"></span></div></div>
-      <div class="sensor-card"><div>🧂 Water TDS</div><div id="v-tds">—</div><div class="bar"><span id="b-tds"></span></div></div>
-      <div class="sensor-card"><div>🌡 Air Temp</div><div id="v-air">—</div><div class="bar"><span id="b-air"></span></div></div>
-      <div class="sensor-card"><div>💦 Humidity</div><div id="v-hum">—</div><div class="bar"><span id="b-hum"></span></div></div>
-      <div class="sensor-card"><div>🌱 Soil Temp</div><div id="v-soiltemp">—</div><div class="bar"><span id="b-soiltemp"></span></div></div>
-      <h4>GAS SENSORS</h4>
-      <div class="gas-grid">
-        <div class="gas-card"><div>☁️</div><div>NH₃ Ammonia</div><div id="v-mq135">—</div></div>
-        <div class="gas-card"><div>🔥</div><div>CH₄ Methane</div><div id="v-mq4">—</div></div>
-        <div class="gas-card"><div>🫧</div><div>CO Gas</div><div id="v-mq7">—</div></div>
+      <div class="panel-title">Live Sensor Readings</div>
+
+      <div class="sensor-card">
+        <div class="sensor-row">
+          <span class="sensor-label">💧 Soil Moisture</span>
+          <span class="sensor-value" id="v-moist">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="b-moist" style="width:4%"></div></div>
+      </div>
+
+      <div class="sensor-card">
+        <div class="sensor-row">
+          <span class="sensor-label">🧂 Water TDS</span>
+          <span class="sensor-value" id="v-tds">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="b-tds" style="width:4%"></div></div>
+      </div>
+
+      <div class="sensor-card">
+        <div class="sensor-row">
+          <span class="sensor-label">🌡️ Air Temp</span>
+          <span class="sensor-value" id="v-air">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="b-air" style="width:4%"></div></div>
+      </div>
+
+      <div class="sensor-card">
+        <div class="sensor-row">
+          <span class="sensor-label">💦 Humidity</span>
+          <span class="sensor-value" id="v-hum">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="b-hum" style="width:4%"></div></div>
+      </div>
+
+      <div class="sensor-card">
+        <div class="sensor-row">
+          <span class="sensor-label">🌱 Soil Temp</span>
+          <span class="sensor-value" id="v-soiltemp">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="b-soiltemp" style="width:4%"></div></div>
+      </div>
+
+      <div class="gas-section">
+        <div class="panel-title" style="margin-top:4px">Gas Sensors</div>
+        <div class="gas-grid">
+          <div class="gas-card">
+            <div class="gas-icon">☁️</div>
+            <div class="gas-name">NH₃</div>
+            <div class="gas-val" id="v-mq135">—</div>
+          </div>
+          <div class="gas-card">
+            <div class="gas-icon">🔥</div>
+            <div class="gas-name">CH₄</div>
+            <div class="gas-val" id="v-mq4">—</div>
+          </div>
+          <div class="gas-card">
+            <div class="gas-icon">🫧</div>
+            <div class="gas-name">CO</div>
+            <div class="gas-val" id="v-mq7">—</div>
+          </div>
+        </div>
       </div>
     </aside>
 
+    <!-- CENTER: Health & Decisions -->
     <section class="center-panel">
-      <div class="hero-row">
-        <div class="farmer-box"><div id="farmerState" class="farmer-state">👨‍🌾</div></div>
-        <div class="health-tag" id="healthTag">🌱 HEALTHY</div>
-        <div class="health-ring"><div id="scoreText">--</div><small>/100<br><span id="confText">Confidence -</span></small></div>
+      <div class="weather-strip" id="weatherStrip">
+        🌥 Loading weather...
       </div>
-      <div class="weather-strip" id="weatherStrip">Tiruchirappalli: --°C · Humidity --% · Rain 0mm · Wind --m/s</div>
-      <div class="advice-box"><div class="title">🤖 AI Field Advice</div><div id="adviceText">Select crop & stage to begin...</div></div>
+
+      <div class="hero-section">
+        <div class="health-ring">
+          <svg class="ring-svg" viewBox="0 0 100 100">
+            <circle class="ring-bg"   cx="50" cy="50" r="45"/>
+            <circle class="ring-fill" cx="50" cy="50" r="45" id="ringFill"/>
+          </svg>
+          <div class="ring-text">
+            <span class="ring-score" id="scoreText">--</span>
+            <span class="ring-label">/100</span>
+            <span class="ring-label" id="confText">--</span>
+          </div>
+        </div>
+
+        <div class="health-tag-box">
+          <div class="health-tag" id="healthTag">🌱 LOADING...</div>
+        </div>
+      </div>
+
+      <div class="advice-box">
+        <div class="advice-title">🤖 AI Field Advice</div>
+        <div id="adviceText">Select crop and stage to begin analysis...</div>
+      </div>
+
       <div class="decision-grid">
-        <div class="decision-card"><div>💧</div><div>Irrigate</div><strong id="d-irrigate">—</strong></div>
-        <div class="decision-card"><div>🔒</div><div>Pump</div><strong id="d-pump">—</strong></div>
-        <div class="decision-card"><div>⚠️</div><div>Gas</div><strong id="d-gas">—</strong></div>
-        <div class="decision-card"><div>⭐</div><div>Stage</div><strong id="d-stage">—</strong></div>
+        <div class="decision-card">
+          <div class="d-icon">💧</div>
+          <div class="d-label">Irrigate</div>
+          <div class="d-value" id="d-irrigate">—</div>
+        </div>
+        <div class="decision-card">
+          <div class="d-icon">⚙️</div>
+          <div class="d-label">Pump</div>
+          <div class="d-value" id="d-pump">—</div>
+        </div>
+        <div class="decision-card">
+          <div class="d-icon">⚠️</div>
+          <div class="d-label">Gas</div>
+          <div class="d-value" id="d-gas">—</div>
+        </div>
+        <div class="decision-card">
+          <div class="d-icon">🌾</div>
+          <div class="d-label">Stage</div>
+          <div class="d-value" id="d-stage">—</div>
+        </div>
       </div>
-      <div class="trend-row">Moisture: <span id="t-moist">—</span> &nbsp;&nbsp; TDS: <span id="t-tds">—</span> &nbsp;&nbsp; AQI: <span id="t-aqi">—</span></div>
+
+      <div class="trend-row">
+        <div class="trend-item">
+          <span class="trend-key">Moisture Trend:</span>
+          <span class="trend-val" id="t-moist">—</span>
+        </div>
+        <div class="trend-item">
+          <span class="trend-key">Water:</span>
+          <span class="trend-val" id="t-tds">—</span>
+        </div>
+        <div class="trend-item">
+          <span class="trend-key">Air Quality:</span>
+          <span class="trend-val" id="t-aqi">—</span>
+        </div>
+      </div>
     </section>
 
+    <!-- RIGHT: Chat -->
     <aside class="right-panel">
-      <div class="chat-head"><span>🌿 Farming Companion</span><span class="status" id="chatStatus">OFFLINE</span></div>
-      <div class="chat-box" id="chatBox">
-        <div class="bot">👋 Hello! I'm your AI farming assistant. Select a crop and ask me anything!</div>
+      <div class="chat-head">
+        <span class="chat-head-title">🌿 Farming AI</span>
+        <div class="chat-status-dot">
+          <div class="dot" id="chatDot"></div>
+          <span id="chatStatus">OFFLINE</span>
+        </div>
       </div>
+
+      <div class="chat-box" id="chatBox">
+        <div class="bot">👋 Hello! I'm your AI farming assistant. Ask me anything about your crop!</div>
+      </div>
+
       <div class="quick-grid">
         <button onclick="quickAsk('Should I irrigate now?')">💧 Irrigate?</button>
-        <button onclick="quickAsk('Is water safe?')">🍼 Water safe?</button>
+        <button onclick="quickAsk('Is water quality safe?')">🧂 Water safe?</button>
         <button onclick="quickAsk('How is crop health?')">🌱 Health?</button>
         <button onclick="quickAsk('Can I fertilize now?')">🌿 Fertilize?</button>
-        <button onclick="quickAsk('Is air quality safe?')">➿ Air quality?</button>
-        <button onclick="quickAsk('What is pump status?')">⚙️ Pump?</button>
+        <button onclick="quickAsk('Is air quality safe?')">☁️ Air quality?</button>
+        <button onclick="quickAsk('What is pump status?')">⚙️ Pump status?</button>
       </div>
+
       <div class="chat-input-row">
-        <input id="chatInput" placeholder="Ask anything about your crop..." />
+        <input id="chatInput" placeholder="Ask about your crop..." />
         <button onclick="sendChat()">➤</button>
       </div>
     </aside>
-  </main>
+  </div>
 
+  <!-- ── SIMBAR ────────────────────────────────────────────── -->
   <footer class="simbar" id="simbar">
-    <div class="sim-left">🎛️ <strong>Sensor Simulator</strong> <span>Click scenario to apply</span></div>
+    <span class="sim-label">🎛️ SIMULATE:</span>
     <div class="scenario-chips">
-      <button onclick="setScenario('normal')">✅ Normal</button>
-      <button onclick="setScenario('dry')">🔥 Dry</button>
-      <button onclick="setScenario('saline')">⚠️ Saline</button>
-      <button onclick="setScenario('gas')">🚨 Gas</button>
-      <button onclick="setScenario('heat')">🌡 Heat</button>
-      <button onclick="setScenario('critical')">💀 Critical</button>
+      <button onclick="setScenario('normal')"   id="sc-normal">✅ Normal</button>
+      <button onclick="setScenario('dry')"      id="sc-dry">🔥 Dry</button>
+      <button onclick="setScenario('saline')"   id="sc-saline">⚠️ Saline</button>
+      <button onclick="setScenario('gas')"      id="sc-gas">🚨 Gas Alert</button>
+      <button onclick="setScenario('heat')"     id="sc-heat">🌡️ Heat Stress</button>
+      <button onclick="setScenario('critical')" id="sc-critical">💀 Critical</button>
     </div>
   </footer>
 
-  <!-- Hidden inputs hold current sensor values -->
-  <div style="display:none">
-    <input id="s-moist-v" value="72"><input id="s-tds-v" value="350">
-    <input id="s-air-v" value="28"><input id="s-hum-v" value="65">
-    <input id="s-soiltemp-v" value="24"><input id="s-mq135-v" value="50">
-    <input id="s-mq4-v" value="200"><input id="s-mq7-v" value="10">
-  </div>
 </div>
 <script src="/static/script.js"></script>
 </body>
