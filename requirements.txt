@@ -1,7 +1,6 @@
 flask
-gunicorn
-pandas
-numpy
 requests
+numpy
+pandas
 scikit-learn
-google-genai
+google-generativeai
