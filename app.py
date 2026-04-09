@@ -137,6 +137,36 @@ def predict(crop, stage, sensors, weather):
     pump_locked  = gas_alert or hs == "CRITICAL" or not tds_safe
     pump_on      = irrigate_now and not pump_locked
 
+    # ── Weather + Forecast-Aware Pump Decision ─────────────────
+    w_temp      = weather.get("temp",    30)
+    w_humidity  = weather.get("humidity", 60)
+    w_rain      = weather.get("rain",     0)
+    fc          = get_forecast()
+    rain_coming = fc.get("rain_coming", False)
+    heat_coming = fc.get("heat_coming", False)
+    total_rain  = fc.get("total_rain_mm", 0)
+    fc_summary  = fc.get("summary", "")
+
+    # Rain currently → skip
+    if w_rain > 2 and pump_on:
+        pump_on = False; irrigate_now = False
+
+    # Heavy rain forecast in 24h → skip
+    if rain_coming and total_rain > 5 and pump_on:
+        pump_on = False; irrigate_now = False
+
+    # Heat wave coming → irrigate early even if borderline
+    if heat_coming and sd["soil_moisture"] < (sc["moist_opt"] - 5) and not pump_locked:
+        irrigate_now = True
+        pump_on      = True
+
+    weather_note = fc_summary if fc_summary else (
+        f"🌧 Rain {w_rain}mm now — skipped." if w_rain > 2 else
+        f"🌡️ Hot {w_temp}°C — HIGH priority." if w_temp > 35 else
+        f"💧 Humid {w_humidity}%."             if w_humidity > 80 else
+        "🌤 Weather normal."
+    )
+
     hist_m = list(history["soil_moisture"])
     trend  = "stable"
     if len(hist_m) >= 3:
@@ -157,6 +187,7 @@ def predict(crop, stage, sensors, weather):
         "field_aqi":    aqi,                "field_aqi_label": aqi_lbl,
         "confidence_pct": min(99,max(70,score+(5 if crop in models else -5))),
         "is_critical_stage": stage in CRITICAL_STAGES,
+        "weather_note": weather_note,
         "sensors_used": sd,
     }
 
@@ -290,6 +321,10 @@ def chat():
     except Exception as e:
         print(f"❌ /chat error: {e}")
         return jsonify({"reply": "Sorry, an error occurred.", "source": "error"}), 500
+
+@app.route("/forecast")
+def forecast_route():
+    return jsonify(get_forecast())
 
 @app.route("/status")
 def status():
