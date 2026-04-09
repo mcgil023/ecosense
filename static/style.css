@@ -206,3 +206,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .farmer-state-badge.poor     { background:rgba(239,83,80,0.15); border:1px solid rgba(239,83,80,0.5);  color:#ef9a9a; }
 .farmer-state-badge.critical { background:rgba(183,28,28,0.2);  border:1px solid rgba(183,28,28,0.6);  color:#ff8a80; }
 .farmer-state-badge.gas      { background:rgba(171,71,188,0.15);border:1px solid rgba(171,71,188,0.5); color:#ce93d8; }
+
+.wa-test-btn{background:rgba(37,211,102,0.15);border:1px solid rgba(37,211,102,0.3);
+  border-radius:8px;padding:5px 8px;cursor:pointer;font-size:1rem;flex-shrink:0;
+  transition:all 0.2s;}
+.wa-test-btn:hover{background:rgba(37,211,102,0.3);}
