@@ -1,4 +1,167 @@
 
+// ── Tamil / English Translations ────────────────────────────
+const LANG = {
+  en: {
+    brand:        "🌱 EcoSense",
+    panelTitle:   "LIVE SENSOR READINGS",
+    gasTitle:     "GAS SENSORS",
+    modeTag_sim:  "🎛️ SIM",
+    modeTag_live: "📡 LIVE",
+    liveBtn:      "📡 Live",
+    simBtn:       "🎛️ Sim",
+    adviceTitle:  "🤖 AI Field Advice",
+    chatHead:     "🌿 AI Farming Companion",
+    chatOnline:   "ONLINE",
+    chatOffline:  "OFFLINE",
+    chatWelcome:  "👋 Hi! I'm your AI Farming Companion. Ask me anything! 🌱",
+    chatPlaceholder: "Ask me anything about your farm...",
+    chatSend:     "➤",
+    simLabel:     "🎛️ SIMULATE:",
+    stageLabel:   "Stage",
+    sendWA:       "📲 Send WhatsApp Alert",
+    sensors: {
+      soil_moisture: "💧 Soil Moisture",
+      tds_ppm:       "🧂 Water TDS",
+      air_temp_c:    "🌡️ Air Temp",
+      humidity_pct:  "💦 Humidity",
+      soil_temp_c:   "🌱 Soil Temp",
+    },
+    decisions: { irrigate:"Irrigate", pump:"Pump", gas:"Gas", stage:"Stage" },
+    trends: { moisture:"Moisture Trend:", water:"Water:", aqi:"Air Quality:" },
+    health: { GOOD:"🌱 GOOD", MODERATE:"⚠️ MODERATE", POOR:"😢 POOR", CRITICAL:"💀 CRITICAL" },
+    scenarios: {
+      normal:"✅ Normal", dry:"🔥 Dry", saline:"⚠️ Saline",
+      gas:"🚨 Gas Alert", heat:"🌡️ Heat Stress", critical:"💀 Critical"
+    },
+    quick: ["💧 Irrigate?","🧂 Water safe?","🌱 Health?","🌿 Fertilize?","☁️ Air quality?","⚙️ Pump status?"],
+    quickQ: ["Should I irrigate now?","Is water quality safe?","How is crop health?",
+             "Can I fertilize now?","Is air quality safe?","What is pump status?"],
+    gaugeLabel:   "HEALTH SCORE / 100",
+    weatherLoading: "🌥 Loading weather...",
+  },
+  ta: {
+    brand:        "🌱 ஈகோசென்ஸ்",
+    panelTitle:   "நேரடி உணரி அளவீடுகள்",
+    gasTitle:     "வாயு உணரிகள்",
+    modeTag_sim:  "🎛️ உருவகம்",
+    modeTag_live: "📡 நேரடி",
+    liveBtn:      "📡 நேரடி",
+    simBtn:       "🎛️ உருவகம்",
+    adviceTitle:  "🤖 AI வயல் ஆலோசனை",
+    chatHead:     "🌿 AI வேளாண் உதவியாளர்",
+    chatOnline:   "இணைக்கப்பட்டது",
+    chatOffline:  "இணைப்பில்லை",
+    chatWelcome:  "👋 வணக்கம்! நான் உங்கள் AI வேளாண் உதவியாளர். எதையும் கேளுங்கள்! 🌱",
+    chatPlaceholder: "உங்கள் வயலைப் பற்றி கேளுங்கள்...",
+    chatSend:     "➤",
+    simLabel:     "🎛️ உருவகம்:",
+    stageLabel:   "வளர்ச்சி நிலை",
+    sendWA:       "📲 வாட்ஸ்அப் எச்சரிக்கை அனுப்பு",
+    sensors: {
+      soil_moisture: "💧 மண் ஈரப்பதம்",
+      tds_ppm:       "🧂 நீர் TDS",
+      air_temp_c:    "🌡️ காற்று வெப்பம்",
+      humidity_pct:  "💦 ஈரப்பதம்",
+      soil_temp_c:   "🌱 மண் வெப்பம்",
+    },
+    decisions: { irrigate:"நீர்ப்பாசனம்", pump:"பம்ப்", gas:"வாயு", stage:"நிலை" },
+    trends: { moisture:"ஈரப்பதம்:", water:"நீர்:", aqi:"காற்று தரம்:" },
+    health: { GOOD:"🌱 நல்லது", MODERATE:"⚠️ நடுத்தரம்", POOR:"😢 மோசம்", CRITICAL:"💀 அவசரம்" },
+    scenarios: {
+      normal:"✅ சாதாரணம்", dry:"🔥 வறட்சி", saline:"⚠️ உப்பு நீர்",
+      gas:"🚨 வாயு எச்சரிக்கை", heat:"🌡️ வெப்ப அழுத்தம்", critical:"💀 அவசரநிலை"
+    },
+    quick: ["💧 பாசனமா?","🧂 நீர் பாதுகாப்பா?","🌱 ஆரோக்கியம்?","🌿 உரமிடலாமா?","☁️ காற்று தரம்?","⚙️ பம்ப் நிலை?"],
+    quickQ: ["இப்போது நீர் பாய்ச்சலாமா?","நீர் தரம் பாதுகாப்பானதா?","பயிரின் ஆரோக்கியம் எப்படி?",
+             "இப்போது உரமிடலாமா?","காற்று தரம் பாதுகாப்பானதா?","பம்ப் நிலை என்ன?"],
+    gaugeLabel:   "ஆரோக்கிய மதிப்பெண் / 100",
+    weatherLoading: "🌥 வானிலை ஏற்றுகிறது...",
+  }
+};
+let currentLang = 'en';
+
+function T(key, sub) {
+  const l = LANG[currentLang];
+  if (sub) return (l[key] && l[key][sub]) || (LANG.en[key] && LANG.en[key][sub]) || sub;
+  return l[key] || LANG.en[key] || key;
+}
+
+function applyLang() {
+  const l = LANG[currentLang];
+  // brand
+  const br = document.querySelector('.brand');
+  if (br) br.textContent = T('brand');
+  // panel titles
+  const pts = document.querySelectorAll('.panel-title');
+  if (pts[0]) pts[0].textContent = T('panelTitle');
+  if (pts[1]) pts[1].textContent = T('gasTitle');
+  // buttons
+  const lb = gid('btn-live'); if(lb) lb.textContent = T('liveBtn');
+  const sb = gid('btn-sim');  if(sb) sb.textContent = T('simBtn');
+  // advice title
+  const at = document.querySelector('.advice-title'); if(at) at.textContent = T('adviceTitle');
+  // chat head title
+  const ch = document.querySelector('.chat-head-title'); if(ch) ch.textContent = T('chatHead');
+  // chat input placeholder
+  const ci = gid('chatInput'); if(ci) ci.placeholder = T('chatPlaceholder');
+  // sim label
+  const sl = document.querySelector('.sim-label'); if(sl) sl.textContent = T('simLabel');
+  // stage wrap label
+  const sw = document.querySelector('.stage-wrap span'); if(sw) sw.textContent = T('stageLabel');
+  // gauge sub
+  const gs = document.querySelector('.gauge-sub'); if(gs) gs.textContent = T('gaugeLabel');
+  // WhatsApp button
+  const wa = gid('waBtn');
+  if(wa) wa.innerHTML = '<span style="font-size:16px;">📲</span> ' + T('sendWA');
+  // sensor labels
+  const smap = {
+    'v-moist':'soil_moisture','v-tds':'tds_ppm','v-air':'air_temp_c',
+    'v-hum':'humidity_pct','v-soiltemp':'soil_temp_c'
+  };
+  document.querySelectorAll('.sensor-label').forEach((el,i) => {
+    const keys = Object.values(smap);
+    if(keys[i]) el.textContent = T('sensors', keys[i]);
+  });
+  // decision labels
+  const dm = {'d-irrigate':'irrigate','d-pump':'pump','d-gas':'gas','d-stage':'stage'};
+  document.querySelectorAll('.d-label').forEach((el,i) => {
+    const keys = Object.values(dm);
+    if(keys[i]) el.textContent = T('decisions', keys[i]);
+  });
+  // trend keys
+  const tkeys = ['moisture','water','aqi'];
+  document.querySelectorAll('.trend-key').forEach((el,i) => {
+    if(tkeys[i]) el.textContent = T('trends', tkeys[i]);
+  });
+  // quick buttons
+  const qbtns = document.querySelectorAll('.quick-grid button');
+  const qlbls = T('quick');
+  qbtns.forEach((b,i) => { if(qlbls[i]) b.textContent = qlbls[i]; });
+  // scenario buttons
+  const sc = T('scenarios');
+  Object.entries(sc).forEach(([k,v]) => {
+    const btn = gid('sc-'+k); if(btn) btn.textContent = v;
+  });
+  // lang toggle
+  const tb = gid('langBtn');
+  if(tb) tb.textContent = currentLang === 'en' ? '🇮🇳 தமிழ்' : '🇬🇧 English';
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'ta' : 'en';
+  applyLang();
+}
+
+function quickAsk(q) {
+  if(gid('chatInput')) gid('chatInput').value = q;
+  sendChat();
+}
+function quickAskIdx(i) {
+  const q = T('quickQ')[i];
+  if(q) { if(gid('chatInput')) gid('chatInput').value=q; sendChat(); }
+}
+
+
 // ── State ──────────────────────────────────────────────────────
 let currentCrop = 'rice', cropStages = {};
 let MODE = 'sim';
@@ -49,8 +212,7 @@ function setMode(mode) {
 // ── Live Poll ───────────────────────────────────────────────────
 function startLivePoll() {
   stopLivePoll();
-  fetchLive();
-  liveInterval = setInterval(fetchLive, 5000);
+  startSSE();
 }
 function stopLivePoll() {
   if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
@@ -316,7 +478,8 @@ async function boot() {
   await loadStatus();
   await loadWeather();
   await loadForecast();
-  setInterval(loadWeather,   60000);
+
+  applyLang();  setInterval(loadWeather,   60000);
   setInterval(loadForecast,  1800000);  // refresh forecast every 30 min
   setMode('sim');
 }
@@ -410,4 +573,43 @@ async function loadForecast() {
   } catch(e) {
     console.error('Forecast error:', e);
   }
+}
+
+// ── Server-Sent Events — real push, no polling ───────────────
+let _sseSource = null;
+let _sseRetry  = 2000;
+
+function startSSE() {
+  stopSSE();
+  try {
+    _sseSource = new EventSource('/stream');
+    _sseSource.onopen = () => {
+      console.log('✅ SSE connected');
+      _sseRetry = 2000;
+      setText('modeTag', T('modeTag_live'));
+    };
+    _sseSource.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d._ping) return;           // heartbeat
+        currentSensors = Object.assign({}, currentSensors, d);
+        renderSensors(currentSensors);
+        runPredict();
+      } catch(err) { console.warn('SSE parse:', err); }
+    };
+    _sseSource.onerror = () => {
+      console.warn('SSE error — retrying in', _sseRetry, 'ms');
+      stopSSE();
+      setTimeout(startSSE, _sseRetry);
+      _sseRetry = Math.min(_sseRetry * 2, 30000); // backoff max 30s
+    };
+  } catch(err) {
+    console.error('SSE not supported — falling back to poll');
+    liveInterval = setInterval(fetchLive, 2000);
+  }
+}
+
+function stopSSE() {
+  if (_sseSource) { _sseSource.close(); _sseSource = null; }
+  if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
 }
