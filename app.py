@@ -45,7 +45,7 @@ with open(BASE/"crop_config.json") as f:
 
 FEATURES = ["crop_enc","stage_enc","is_critical_stage","soil_moisture","tds_ppm",
             "air_temp_c","soil_temp_c","humidity_pct","mq135_ammonia","mq4_methane",
-            "mq7_co","mq2_smoke","moist_min_threshold","moist_opt_threshold","tds_max_threshold"]
+            "mq7_co","moist_min_threshold","moist_opt_threshold","tds_max_threshold"]
 history  = {k: deque(maxlen=20) for k in ["soil_moisture","tds_ppm","air_temp_c","mq135_ammonia"]}
 esp32_data = {}
 
@@ -70,7 +70,7 @@ def predict(crop, stage, sd, weather=None):
         le_crop.transform([crop])[0], le_stage.transform([stage])[0],
         1 if sc.get("critical") else 0,
         sd["soil_moisture"],sd["tds_ppm"],sd["air_temp_c"],sd["soil_temp_c"],
-        sd["humidity_pct"],sd["mq135_ammonia"],sd["mq4_methane"],sd["mq7_co"],sd["mq2_smoke"],
+        sd["humidity_pct"],sd["mq135_ammonia"],sd["mq4_methane"],sd["mq7_co"],
         sc["moist_min"],sc["moist_opt"],cfg["tds_max"]
     ]], columns=FEATURES)
     hl = le_health.inverse_transform([model_health.predict(row)[0]])[0]
@@ -84,7 +84,6 @@ def predict(crop, stage, sd, weather=None):
     if sd["mq7_co"]>100: aqi-=35
     elif sd["mq7_co"]>35: aqi-=20
     if sd["mq4_methane"]>1000: aqi-=25
-    if sd["mq2_smoke"]>400: aqi-=25
     aqi = max(0,aqi)
     aqi_lbl = ("Excellent" if aqi>=80 else "Good" if aqi>=60 else "Moderate" if aqi>=40 else "Poor" if aqi>=20 else "Critical")
     for k in history:
@@ -169,7 +168,7 @@ def chat():
 def status():
     return jsonify({"gemini_ready":gemini_ready,"models_loaded":True,
                     "weather_enabled":bool(WEATHER_API_KEY),
-                    "telegram_enabled":bool(TELEGRAM_TOKEN and TELEGRAM_CHAT_ID),"callmebot_enabled":bool(CALLMEBOT_PHONE and CALLMEBOT_APIKEY)})
+                    })
 
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)))
