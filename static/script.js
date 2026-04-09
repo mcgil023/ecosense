@@ -184,6 +184,27 @@ function updateFarmerState(r) {
   }
 }
 
+
+/* ── WhatsApp test ── */
+function testWhatsApp(){
+  const btn = document.querySelector('.wa-test-btn');
+  const msg = document.getElementById('wa-text');
+  btn.textContent = '⏳';
+  fetch('/test-whatsapp').then(r=>r.json()).then(res=>{
+    if(res.ok){
+      btn.textContent = '✅';
+      msg.style.color = '#66bb6a';
+      msg.textContent = '✅ WhatsApp test sent! Check your phone.';
+      setTimeout(()=>{ btn.textContent='🧪'; msg.style.color=''; }, 4000);
+    } else {
+      btn.textContent = '❌';
+      msg.style.color = '#ef5350';
+      msg.textContent = '❌ Failed: ' + (res.reason || res.error || 'Check env vars');
+      setTimeout(()=>{ btn.textContent='🧪'; msg.style.color=''; }, 5000);
+    }
+  }).catch(()=>{ btn.textContent='❌'; msg.textContent='Connection error'; });
+}
+
 /* ── lang ── */
 function toggleLang(){
   currentLang = currentLang === 'en' ? 'ta' : 'en';
