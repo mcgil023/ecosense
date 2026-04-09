@@ -1,1 +1,250 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>EcoSense</title><link rel="stylesheet" href="/static/style.css"></head><body><div class="top-bar"><div class="logo">🌱 EcoSense</div><div class="header-center"><span id="companion-badge" class="companion-badge online">🤖 Farming Companion: ONLINE</span><span id="clock" class="clock"></span></div><button id="lang-toggle" class="lang-btn" onclick="toggleLang()">🌐 தமிழ்</button></div><div class="selector-bar"><div class="crop-btn-group"><button class="crop-btn active" onclick="selectCrop(this,'rice')">🌾<br>Rice</button><button class="crop-btn" onclick="selectCrop(this,'maize')">🌽<br>Maize</button><button class="crop-btn" onclick="selectCrop(this,'groundnut')">🥜<br>Groundnut</button><button class="crop-btn" onclick="selectCrop(this,'sugarcane')">🎋<br>Sugarcane</button><button class="crop-btn" onclick="selectCrop(this,'coconut')">🥥<br>Coconut</button></div><select id="crop-select" style="display:none"><option value="rice">Rice</option><option value="maize">Maize</option><option value="groundnut">Groundnut</option><option value="sugarcane">Sugarcane</option><option value="coconut">Coconut</option></select><div class="selector-group"><label>Growth Stage</label><select id="stage-select" onchange="runPredict()"></select></div><div class="selector-group simulate-wrap"><button class="sim-toggle" onclick="toggleSim()">🎛️ Simulate <span id="sim-arrow">▼</span></button><div id="sim-menu" class="sim-menu hidden"><button onclick="setScenario('normal')">✅ Normal</button><button onclick="setScenario('dry')">🔥 Dry</button><button onclick="setScenario('saline')">⚠️ Saline</button><button onclick="setScenario('gas')">🚨 Gas</button><button onclick="setScenario('heat')">🌡️ Heat</button><button onclick="setScenario('critical')">💀 Critical</button></div></div></div><div id="weather-bar" class="weather-bar">Weather: loading...</div><div class="main-grid"><div class="center-panel wide"><div class="health-ring-container big"><svg class="ring-svg" viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="50"></circle><circle id="ring-fill" class="ring-fill" cx="60" cy="60" r="50"></circle></svg><div class="ring-text"><span id="health-score-num" class="ring-score">--</span><span class="ring-unit">/100</span><span id="health-label" class="ring-label">—</span></div></div><div class="sensor-cards"><div class="read-card"><div class="read-title">💧 Moisture</div><div id="card-moisture" class="read-value">--</div></div><div class="read-card"><div class="read-title">🧂 TDS Water</div><div id="card-tds" class="read-value">--</div></div><div class="read-card"><div class="read-title">🌡️ Air Temp</div><div id="card-air" class="read-value">--</div></div><div class="read-card"><div class="read-title">💦 Humidity</div><div id="card-hum" class="read-value">--</div></div><div class="read-card"><div class="read-title">🌱 Soil Temp</div><div id="card-soil" class="read-value">--</div></div><div class="read-card"><div class="read-title">☁️ Gas Level</div><div id="card-gas" class="read-value">--</div></div></div><div class="advice-box"><div class="advice-title">🤖 AI Advice</div><div id="ai-advice" class="advice-text">Loading...</div></div><div class="decision-cards"><div class="dc-card"><div class="dc-title">💧 Irrigate Now</div><div id="dc-irrigate-val" class="dc-val dc-no">—</div></div><div class="dc-card"><div class="dc-title">🔒 Pump Lock</div><div id="dc-lock-val" class="dc-val dc-no">—</div></div><div class="dc-card"><div class="dc-title">⚠️ Gas Alert</div><div id="dc-gas-val" class="dc-val dc-no">—</div></div><div class="dc-card"><div class="dc-title">⭐ Critical Stage</div><div id="dc-critical-val" class="dc-val dc-no">—</div></div></div><div class="status-cards"><div class="sc-card"><div class="sc-title">Pump</div><div id="pump-status" class="card-value status-off">—</div></div><div class="sc-card"><div class="sc-title">TDS</div><div id="tds-status" class="card-value status-ok">—</div></div><div class="sc-card"><div class="sc-title">Gas</div><div id="gas-status" class="card-value status-ok">—</div></div><div class="sc-card"><div class="sc-title">Stage</div><div id="stage-status" class="card-value">—</div></div></div><div class="wa-section"><div class="wa-header">📱 WhatsApp Alert Preview</div><div id="wa-message" class="wa-message">Generating alert...</div></div></div><div class="chat-panel fullwidth"><div class="chat-header"><span>🌿 Farming Companion Bot</span><span id="bot-badge" class="bot-badge online">ONLINE</span></div><div id="chat-window" class="chat-window"><div class="chat-msg bot-msg"><span class="msg-text">Hello! Ask me anything about your crop.</span></div></div><div id="typing-indicator" class="typing-indicator hidden">🌿 Bot is thinking...</div><div class="quick-asks"><button onclick="quickAsk('Should I irrigate now?')">💧 Irrigate?</button><button onclick="quickAsk('Is the water safe to use?')">🚿 Water safe?</button><button onclick="quickAsk('How is my crop health?')">🌱 Crop health?</button><button onclick="quickAsk('Can I fertilize now?')">🌿 Fertilize?</button><button onclick="quickAsk('What is the air quality?')">🌫️ Air quality?</button><button onclick="quickAsk('What is the pump status?')">⚙️ Pump?</button></div><div class="chat-input-row"><input id="chat-input" type="text" placeholder="Ask anything about your crop..." onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()" class="send-btn">➤</button></div></div></div><script src="/static/script.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EcoSense — Smart Farming AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-logo">🌱 EcoSense</div>
+  <div class="topbar-center">
+    <div class="crop-tabs">
+      <button class="ctab active" onclick="selectCrop(this,'rice')">🌾 Rice</button>
+      <button class="ctab" onclick="selectCrop(this,'maize')">🌽 Maize</button>
+      <button class="ctab" onclick="selectCrop(this,'groundnut')">🥜 Groundnut</button>
+      <button class="ctab" onclick="selectCrop(this,'sugarcane')">🎋 Sugarcane</button>
+      <button class="ctab" onclick="selectCrop(this,'coconut')">🥥 Coconut</button>
+    </div>
+    <div class="stage-row">
+      <label class="stage-lbl">Stage</label>
+      <select id="stage-select" class="stage-sel" onchange="runPredict()"></select>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="gemini-badge" class="gbadge off">🤖 AI</span>
+    <span id="weather-pill" class="wpill">🌦 --°C</span>
+    <button class="lang-toggle" onclick="toggleLang()">🌐 <span id="lang-txt">தமிழ்</span></button>
+    <span id="clock" class="clock"></span>
+  </div>
+</header>
+
+<!-- MAIN 3-COLUMN GRID -->
+<main class="tri-grid" id="main-grid">
+
+  <!-- LEFT — LIVE READINGS -->
+  <section class="panel left-panel">
+    <div class="panel-hdr">📡 Live Sensor Readings</div>
+    <div class="sensor-block">
+      <div class="sb-label"><span>💧 Soil Moisture</span><span id="v-moisture" class="sb-val">—</span></div>
+      <div class="sb-bar-bg"><div id="b-moisture" class="sb-bar blue"></div></div>
+      <div class="sb-sub" id="s-moisture-txt">—</div>
+    </div>
+    <div class="sensor-block">
+      <div class="sb-label"><span>🧂 Water TDS</span><span id="v-tds" class="sb-val">—</span></div>
+      <div class="sb-bar-bg"><div id="b-tds" class="sb-bar amber"></div></div>
+      <div class="sb-sub" id="s-tds-txt">—</div>
+    </div>
+    <div class="sensor-block">
+      <div class="sb-label"><span>🌡 Air Temp</span><span id="v-airtemp" class="sb-val">—</span></div>
+      <div class="sb-bar-bg"><div id="b-airtemp" class="sb-bar orange"></div></div>
+      <div class="sb-sub" id="s-airtemp-txt">—</div>
+    </div>
+    <div class="sensor-block">
+      <div class="sb-label"><span>💦 Humidity</span><span id="v-hum" class="sb-val">—</span></div>
+      <div class="sb-bar-bg"><div id="b-hum" class="sb-bar teal"></div></div>
+      <div class="sb-sub" id="s-hum-txt">—</div>
+    </div>
+    <div class="sensor-block">
+      <div class="sb-label"><span>🌱 Soil Temp</span><span id="v-soiltemp" class="sb-val">—</span></div>
+      <div class="sb-bar-bg"><div id="b-soiltemp" class="sb-bar green"></div></div>
+      <div class="sb-sub" id="s-soiltemp-txt">—</div>
+    </div>
+    <div class="panel-divider">Gas Sensors</div>
+    <div class="gas-grid">
+      <div class="gas-card" id="gc-mq135"><div class="gc-icon">☁️</div><div class="gc-name">NH₃ Ammonia</div><div id="v-mq135" class="gc-val">—</div><div id="s-mq135" class="gc-status">—</div></div>
+      <div class="gas-card" id="gc-mq4"><div class="gc-icon">🔥</div><div class="gc-name">CH₄ Methane</div><div id="v-mq4" class="gc-val">—</div><div id="s-mq4" class="gc-status">—</div></div>
+      <div class="gas-card" id="gc-mq7"><div class="gc-icon">💨</div><div class="gc-name">CO Carbon</div><div id="v-mq7" class="gc-val">—</div><div id="s-mq7" class="gc-status">—</div></div>
+      <div class="gas-card" id="gc-mq2"><div class="gc-icon">🚬</div><div class="gc-name">Smoke</div><div id="v-mq2" class="gc-val">—</div><div id="s-mq2" class="gc-status">—</div></div>
+    </div>
+    <!-- hidden values -->
+    <input type="hidden" id="s-moisture" value="72">
+    <input type="hidden" id="s-tds" value="350">
+    <input type="hidden" id="s-airtemp" value="27">
+    <input type="hidden" id="s-soiltemp" value="23">
+    <input type="hidden" id="s-humidity" value="65">
+    <input type="hidden" id="s-mq135-v" value="50">
+    <input type="hidden" id="s-mq4-v" value="200">
+    <input type="hidden" id="s-mq7-v" value="10">
+    <input type="hidden" id="s-mq2-v" value="50">
+  </section>
+
+  <!-- CENTER — HEALTH + FARMER -->
+  <section class="panel center-panel">
+    <div class="farmer-zone">
+      <svg class="farmer-svg" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="80" cy="195" rx="35" ry="6" fill="rgba(0,0,0,0.25)"/>
+        <ellipse cx="80" cy="52" rx="30" ry="6" fill="#6d4c1f"/>
+        <rect x="56" y="28" width="48" height="28" rx="8" fill="#8B6914"/>
+        <rect x="56" y="48" width="48" height="6" rx="3" fill="#4CAF50"/>
+        <circle cx="80" cy="72" r="18" fill="#FFCC80"/>
+        <circle cx="74" cy="69" r="2.5" fill="#5D4037"/>
+        <circle cx="86" cy="69" r="2.5" fill="#5D4037"/>
+        <path d="M74 78 Q80 84 86 78" stroke="#5D4037" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <rect x="60" y="90" width="40" height="52" rx="8" fill="#2E7D32"/>
+        <rect x="60" y="104" width="40" height="5" rx="2" fill="#1B5E20"/>
+        <g class="arm-left">
+          <line x1="60" y1="98" x2="35" y2="118" stroke="#FFCC80" stroke-width="6" stroke-linecap="round"/>
+          <rect x="15" y="112" width="22" height="14" rx="3" fill="#607D8B"/>
+          <line x1="15" y1="122" x2="8" y2="130" stroke="#607D8B" stroke-width="3" stroke-linecap="round"/>
+          <circle class="wdrop d1" cx="6" cy="136" r="2.5" fill="#29B6F6" opacity="0.9"/>
+          <circle class="wdrop d2" cx="10" cy="140" r="2" fill="#29B6F6" opacity="0.8"/>
+          <circle class="wdrop d3" cx="4" cy="142" r="1.5" fill="#29B6F6" opacity="0.7"/>
+        </g>
+        <g class="arm-right">
+          <line x1="100" y1="98" x2="122" y2="112" stroke="#FFCC80" stroke-width="6" stroke-linecap="round"/>
+        </g>
+        <rect x="63" y="140" width="13" height="42" rx="6" fill="#1B5E20"/>
+        <rect x="84" y="140" width="13" height="42" rx="6" fill="#1B5E20"/>
+        <ellipse cx="69" cy="183" rx="10" ry="5" fill="#4E342E"/>
+        <ellipse cx="91" cy="183" rx="10" ry="5" fill="#4E342E"/>
+        <text class="sparkle s1" x="128" y="80" font-size="14">✨</text>
+        <text class="sparkle s2" x="20" y="88" font-size="10">🌿</text>
+        <text class="sparkle s3" x="130" y="50" font-size="10">⭐</text>
+      </svg>
+      <div class="health-ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 130 130">
+          <circle class="r-bg" cx="65" cy="65" r="52"/>
+          <circle id="r-fill" class="r-fill" cx="65" cy="65" r="52"/>
+        </svg>
+        <div class="ring-inner">
+          <span id="hs-num" class="hs-num">--</span>
+          <span class="hs-unit">/100</span>
+          <span id="hs-label" class="hs-label">Loading</span>
+          <span id="hs-conf" class="hs-conf">Confidence --</span>
+        </div>
+      </div>
+    </div>
+    <div id="weather-strip" class="weather-strip">🌦 Loading weather...</div>
+    <div class="advice-card">
+      <div class="advice-title">🤖 AI Field Advice</div>
+      <div id="ai-advice" class="advice-body">Select crop & stage to begin...</div>
+    </div>
+    <div class="decision-row">
+      <div class="dchip" id="dc-irrigate"><div class="dc-icon">💧</div><div class="dc-name">Irrigate</div><div id="dv-irrigate" class="dc-val">—</div></div>
+      <div class="dchip" id="dc-pump"><div class="dc-icon">🔒</div><div class="dc-name">Pump</div><div id="dv-pump" class="dc-val">—</div></div>
+      <div class="dchip" id="dc-gas"><div class="dc-icon">⚠️</div><div class="dc-name">Gas</div><div id="dv-gas" class="dc-val">—</div></div>
+      <div class="dchip" id="dc-stage"><div class="dc-icon">⭐</div><div class="dc-name">Stage</div><div id="dv-stage" class="dc-val">—</div></div>
+    </div>
+    <div class="wa-box">
+      <span class="wa-ico">📱</span>
+      <span id="wa-text" class="wa-msg">WhatsApp alert preview will show here...</span>
+    </div>
+    <div class="trend-row">
+      <span class="trend-lbl">Moisture:</span><span id="trend-val" class="trend-val">—</span>
+      <span class="trend-lbl" style="margin-left:10px">TDS:</span><span id="tds-safe-val" class="trend-val">—</span>
+      <span class="trend-lbl" style="margin-left:10px">AQI:</span><span id="aqi-val" class="trend-val">—</span>
+    </div>
+  </section>
+
+  <!-- RIGHT — CHAT -->
+  <section class="panel right-panel">
+    <div class="chat-hdr">
+      <span>🌿 Farming Companion</span>
+      <span id="bot-badge" class="bbadge off">OFFLINE</span>
+    </div>
+    <div id="chat-win" class="chat-win">
+      <div class="msg bot"><div class="bubble">👋 Hello! I'm your AI farming assistant. Select a crop and ask me anything!</div></div>
+    </div>
+    <div id="typing" class="typing hidden">🌿 Thinking...</div>
+    <div class="quick-row">
+      <button onclick="qa('Should I irrigate now?')">💧 Irrigate?</button>
+      <button onclick="qa('Is water safe to use?')">🚿 Water safe?</button>
+      <button onclick="qa('How is my crop health?')">🌱 Health?</button>
+      <button onclick="qa('Can I fertilize now?')">🌿 Fertilize?</button>
+      <button onclick="qa('What is the air quality?')">🌫 Air quality?</button>
+      <button onclick="qa('What is pump status?')">⚙️ Pump?</button>
+    </div>
+    <div class="chat-input-row">
+      <input id="chat-in" type="text" placeholder="Ask anything about your crop..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="send-btn" onclick="sendChat()">➤</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ░░░ SIMULATE BOTTOM PANEL ░░░ -->
+<div class="sim-panel" id="sim-panel">
+  <!-- HANDLE BAR -->
+  <div class="sim-handle" onclick="toggleSimPanel()">
+    <div class="sim-handle-left">
+      <span class="sim-handle-icon">🎛️</span>
+      <span class="sim-handle-title">Sensor Simulator</span>
+      <span class="sim-handle-sub">Click to expand · Fine-tune all sensor values</span>
+    </div>
+    <div class="sim-handle-right">
+      <div class="sim-quick-chips">
+        <span onclick="event.stopPropagation();setScenario('normal')" class="sqchip green">✅ Normal</span>
+        <span onclick="event.stopPropagation();setScenario('dry')" class="sqchip amber">🔥 Dry</span>
+        <span onclick="event.stopPropagation();setScenario('saline')" class="sqchip purple">⚠️ Saline</span>
+        <span onclick="event.stopPropagation();setScenario('gas')" class="sqchip red">🚨 Gas</span>
+        <span onclick="event.stopPropagation();setScenario('heat')" class="sqchip orange">🌡 Heat</span>
+        <span onclick="event.stopPropagation();setScenario('critical')" class="sqchip darkred">💀 Critical</span>
+      </div>
+      <span id="sim-arrow" class="sim-arrow">▲</span>
+    </div>
+  </div>
+
+  <!-- EXPANDED CONTENT -->
+  <div class="sim-body" id="sim-body">
+    <div class="sim-section-title">🌱 Field Sensors</div>
+    <div class="sim-sliders">
+      <div class="sl-item">
+        <div class="sl-top"><span>💧 Soil Moisture</span><span id="disp-moisture" class="sl-val">72%</span></div>
+        <input type="range" min="0" max="100" value="72" step="1" id="sl-moisture" oninput="sliderChange('moisture',this.value,'%',0,100)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>🧂 Water TDS</span><span id="disp-tds" class="sl-val">350 ppm</span></div>
+        <input type="range" min="0" max="2000" value="350" step="10" id="sl-tds" oninput="sliderChange('tds',this.value,' ppm',0,2000)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>🌡 Air Temp</span><span id="disp-airtemp" class="sl-val">27°C</span></div>
+        <input type="range" min="10" max="50" value="27" step="0.5" id="sl-airtemp" oninput="sliderChange('airtemp',this.value,'°C',10,50)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>💦 Humidity</span><span id="disp-humidity" class="sl-val">65%</span></div>
+        <input type="range" min="0" max="100" value="65" step="1" id="sl-humidity" oninput="sliderChange('humidity',this.value,'%',0,100)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>🌱 Soil Temp</span><span id="disp-soiltemp" class="sl-val">23°C</span></div>
+        <input type="range" min="10" max="50" value="23" step="0.5" id="sl-soiltemp" oninput="sliderChange('soiltemp',this.value,'°C',10,50)">
+      </div>
+    </div>
+    <div class="sim-section-title" style="margin-top:10px">🌫️ Gas Sensors</div>
+    <div class="sim-sliders">
+      <div class="sl-item">
+        <div class="sl-top"><span>☁️ NH₃ Ammonia <em class="sl-limit">(danger &gt;200)</em></span><span id="disp-mq135" class="sl-val">50 ppm</span></div>
+        <input type="range" min="0" max="500" value="50" step="5" id="sl-mq135" oninput="sliderChange('mq135',this.value,' ppm',0,500)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>🔥 CH₄ Methane <em class="sl-limit">(danger &gt;1000)</em></span><span id="disp-mq4" class="sl-val">200 ppm</span></div>
+        <input type="range" min="0" max="2000" value="200" step="10" id="sl-mq4" oninput="sliderChange('mq4',this.value,' ppm',0,2000)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>💨 CO Carbon <em class="sl-limit">(danger &gt;100)</em></span><span id="disp-mq7" class="sl-val">10 ppm</span></div>
+        <input type="range" min="0" max="300" value="10" step="5" id="sl-mq7" oninput="sliderChange('mq7',this.value,' ppm',0,300)">
+      </div>
+      <div class="sl-item">
+        <div class="sl-top"><span>🚬 Smoke <em class="sl-limit">(danger &gt;400)</em></span><span id="disp-mq2" class="sl-val">50 ppm</span></div>
+        <input type="range" min="0" max="800" value="50" step="10" id="sl-mq2" oninput="sliderChange('mq2',this.value,' ppm',0,800)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

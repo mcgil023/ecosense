@@ -3,6 +3,6 @@ joblib
 numpy
 pandas
 scikit-learn==1.6.1
-google-generativeai
+google-genai
 gunicorn
 requests
