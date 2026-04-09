@@ -3,11 +3,11 @@ let currentCrop='rice', cropStages={};
 const SIM_H=46, SIM_EXP=260;
 
 const SCENARIOS={
-  normal:  {moisture:72,tds:350, airtemp:27,soiltemp:23,humidity:65,mq135:50, mq4:200, mq7:10, mq2:50},
-  dry:     {moisture:32,tds:350, airtemp:36,soiltemp:31,humidity:40,mq135:70, mq4:200, mq7:10, mq2:50},
-  saline:  {moisture:72,tds:1400,airtemp:28,soiltemp:24,humidity:60,mq135:50, mq4:200, mq7:10, mq2:50},
-  gas:     {moisture:68,tds:350, airtemp:28,soiltemp:24,humidity:62,mq135:290,mq4:1300,mq7:90, mq2:550},
-  heat:    {moisture:60,tds:300, airtemp:43,soiltemp:39,humidity:28,mq135:50, mq4:200, mq7:10, mq2:50},
+  normal:  {moisture:72,tds:350, airtemp:27,soiltemp:23,humidity:65,mq135:50, mq4:200, mq7:10},
+  dry:     {moisture:32,tds:350, airtemp:36,soiltemp:31,humidity:40,mq135:70, mq4:200, mq7:10},
+  saline:  {moisture:72,tds:1400,airtemp:28,soiltemp:24,humidity:60,mq135:50, mq4:200, mq7:10},
+  gas:     {moisture:68,tds:350, airtemp:28,soiltemp:24,humidity:62,mq135:290,mq4:1300,mq7:90},
+  heat:    {moisture:60,tds:300, airtemp:43,soiltemp:39,humidity:28,mq135:50, mq4:200, mq7:10},
   critical:{moisture:28,tds:1600,airtemp:44,soiltemp:40,humidity:20,mq135:310,mq4:1400,mq7:110,mq2:600}
 };
 
@@ -70,7 +70,6 @@ function setScenario(s){
   setSl('sl-mq135',v.mq135,'disp-mq135',' ppm');
   setSl('sl-mq4',v.mq4,'disp-mq4',' ppm');
   setSl('sl-mq7',v.mq7,'disp-mq7',' ppm');
-  setSl('sl-mq2',v.mq2,'disp-mq2',' ppm');
   runPredict();
 }
 function setSl(slId,val,dispId,unit){
@@ -81,7 +80,7 @@ function setHid(id,val){const el=document.getElementById(id);if(el)el.value=val;
 
 /* ── slider change ── */
 function sliderChange(field,val,unit){
-  const map={moisture:'s-moisture',tds:'s-tds',airtemp:'s-airtemp',soiltemp:'s-soiltemp',humidity:'s-humidity',mq135:'s-mq135-v',mq4:'s-mq4-v',mq7:'s-mq7-v',mq2:'s-mq2-v'};
+  const map={moisture:'s-moisture',tds:'s-tds',airtemp:'s-airtemp',soiltemp:'s-soiltemp',humidity:'s-humidity',mq135:'s-mq135-v',mq4:'s-mq4-v',mq7:'s-mq7-v'};
   setHid(map[field],val);
   const dp=document.getElementById('disp-'+field); if(dp)dp.textContent=parseFloat(val).toFixed(field==='airtemp'||field==='soiltemp'?1:0)+unit;
   runPredict();
@@ -89,7 +88,7 @@ function sliderChange(field,val,unit){
 
 /* ── get sensors ── */
 function getSensors(){
-  return{soil_moisture:+hv('s-moisture'),tds_ppm:+hv('s-tds'),air_temp_c:+hv('s-airtemp'),soil_temp_c:+hv('s-soiltemp'),humidity_pct:+hv('s-humidity'),mq135_ammonia:+hv('s-mq135-v'),mq4_methane:+hv('s-mq4-v'),mq7_co:+hv('s-mq7-v'),mq2_smoke:+hv('s-mq2-v')};
+  return{soil_moisture:+hv('s-moisture'),tds_ppm:+hv('s-tds'),air_temp_c:+hv('s-airtemp'),soil_temp_c:+hv('s-soiltemp'),humidity_pct:+hv('s-humidity'),mq135_ammonia:+hv('s-mq135-v'),mq4_methane:+hv('s-mq4-v'),mq7_co:+hv('s-mq7-v')};
 }
 function hv(id){const e=document.getElementById(id);return e?e.value:0;}
 
@@ -112,7 +111,6 @@ function updateUI(r){
   setGas('mq135',sd.mq135_ammonia,sd.mq135_ammonia>200?'danger':sd.mq135_ammonia>100?'warning':'ok',sd.mq135_ammonia>200?'🚨 DANGER':sd.mq135_ammonia>100?'⚠️ Warning':'✅ Clear');
   setGas('mq4',sd.mq4_methane,sd.mq4_methane>1000?'danger':sd.mq4_methane>500?'warning':'ok',sd.mq4_methane>1000?'🚨 DANGER':'✅ Clear');
   setGas('mq7',sd.mq7_co,sd.mq7_co>100?'danger':sd.mq7_co>35?'warning':'ok',sd.mq7_co>100?'🚨 DANGER':sd.mq7_co>35?'⚠️ Warning':'✅ Clear');
-  setGas('mq2',sd.mq2_smoke,sd.mq2_smoke>400?'danger':sd.mq2_smoke>200?'warning':'ok',sd.mq2_smoke>400?'🚨 DANGER':'✅ Clear');
   // ring
   const circ=327,fill=document.getElementById('r-fill');
   fill.style.strokeDashoffset=circ-(circ*r.health_score/100);
