@@ -149,7 +149,7 @@ function applyLang() {
 
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'ta' : 'en';
-  applyLang();
+  applyUILang();
 }
 
 function quickAsk(q) {
@@ -509,7 +509,7 @@ async function sendChat() {
         message: msg, crop: currentCrop,
         stage:   stageEl ? stageEl.value : 'germination',
         sensors: currentSensors,
-        lang:    'ta'
+        lang:    uiLang
       })
     });
     const d = await r.json();
@@ -613,4 +613,106 @@ function startSSE() {
 function stopSSE() {
   if (_sseSource) { _sseSource.close(); _sseSource = null; }
   if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
+}
+
+// ── UI Language Toggle (EN ↔ TA) ────────────────────────────
+// Only sensor labels, health status, advice, decisions toggle
+// Sim menu, mode buttons always stay English
+
+const UI_STRINGS = {
+  en: {
+    sensorPanel:   "LIVE SENSOR READINGS",
+    gasPanel:      "GAS SENSORS",
+    adviceTitle:   "🤖 AI Field Advice",
+    chatHead:      "🌿 AI Farming Companion",
+    chatPlaceholder: "Ask me anything about your farm...",
+    chatWelcome:   "👋 Hi! I'm your AI Farming Companion. Ask me anything! 🌱",
+    gaugeLabel:    "HEALTH SCORE / 100",
+    decisions:     ["Irrigate","Pump","Gas","Stage"],
+    trendKeys:     ["Moisture Trend:","Water:","Air Quality:"],
+    health: { GOOD:"🌱 GOOD", MODERATE:"⚠️ MODERATE", POOR:"😢 POOR", CRITICAL:"💀 CRITICAL" },
+    advice: {
+      GOOD:     "✅ Crop looks healthy. Keep monitoring.",
+      MODERATE: "⚠️ Crop needs attention. Check moisture & temperature.",
+      POOR:     "🔴 Crop is struggling. Irrigate and inspect field.",
+      CRITICAL: "💀 CRITICAL — Immediate action required!"
+    },
+    langBtn: "🇮🇳 TA",
+    waBtn:   "📲 Send WhatsApp Alert",
+  },
+  ta: {
+    sensorPanel:   "நேரடி உணரி அளவீடுகள்",
+    gasPanel:      "வாயு உணரிகள்",
+    adviceTitle:   "🤖 AI வயல் ஆலோசனை",
+    chatHead:      "🌿 AI வேளாண் உதவியாளர்",
+    chatPlaceholder: "உங்கள் வயலைப் பற்றி கேளுங்கள்...",
+    chatWelcome:   "👋 வணக்கம்! நான் உங்கள் AI வேளாண் உதவியாளர். எதையும் கேளுங்கள்! 🌱",
+    gaugeLabel:    "ஆரோக்கிய மதிப்பெண் / 100",
+    decisions:     ["நீர்ப்பாசனம்","பம்ப்","வாயு","நிலை"],
+    trendKeys:     ["ஈரப்பதம்:","நீர்:","காற்று தரம்:"],
+    health: { GOOD:"🌱 நல்லது", MODERATE:"⚠️ நடுத்தரம்", POOR:"😢 மோசம்", CRITICAL:"💀 அவசரம்" },
+    advice: {
+      GOOD:     "✅ பயிர் ஆரோக்கியமாக உள்ளது. தொடர்ந்து கண்காணியுங்கள்.",
+      MODERATE: "⚠️ பயிருக்கு கவனிப்பு தேவை. ஈரப்பதம் & வெப்பம் சரிபாருங்கள்.",
+      POOR:     "🔴 பயிர் கஷ்டப்படுகிறது. நீர் பாய்ச்சி வயலை சோதியுங்கள்.",
+      CRITICAL: "💀 அவசரம் — உடனடி நடவடிக்கை தேவை!"
+    },
+    langBtn: "🇬🇧 EN",
+    waBtn:   "📲 வாட்ஸ்அப் எச்சரிக்கை அனுப்பு",
+  }
+};
+
+let uiLang = 'ta';   // default Tamil for readings/advice
+
+function toggleUILang() {
+  uiLang = (uiLang === 'ta') ? 'en' : 'ta';
+  applyUILang();
+}
+
+function applyUILang() {
+  const S = UI_STRINGS[uiLang];
+  const gid = id => document.getElementById(id);
+  const qs  = sel => document.querySelector(sel);
+  const qsa = sel => document.querySelectorAll(sel);
+
+  // Panel titles
+  const pts = qsa('.panel-title');
+  if (pts[0]) pts[0].textContent = S.sensorPanel;
+  if (pts[1]) pts[1].textContent = S.gasPanel;
+
+  // Advice title
+  const at = qs('.advice-title'); if (at) at.textContent = S.adviceTitle;
+
+  // Gauge subtitle
+  const gs = qs('.gauge-sub');    if (gs) gs.textContent = S.gaugeLabel;
+
+  // Chat head
+  const ch = qs('.chat-head-title'); if (ch) ch.textContent = S.chatHead;
+
+  // Chat input placeholder
+  const ci = gid('chatInput'); if (ci) ci.placeholder = S.chatPlaceholder;
+
+  // Decision labels
+  const dls = qsa('.d-label');
+  S.decisions.forEach((v,i) => { if(dls[i]) dls[i].textContent = v; });
+
+  // Trend keys
+  const tks = qsa('.trend-key');
+  S.trendKeys.forEach((v,i) => { if(tks[i]) tks[i].textContent = v; });
+
+  // WhatsApp button
+  const wa = gid('waBtn');
+  if (wa) wa.innerHTML = S.waBtn;
+
+  // Lang toggle button label
+  const lb = gid('langToggleBtn'); if (lb) lb.textContent = S.langBtn;
+
+  // Re-render health status & advice if result available
+  if (window._lastResult) {
+    const hs = window._lastResult.health_status || 'GOOD';
+    const el = document.getElementById('healthStatus');
+    if (el) el.textContent = S.health[hs] || hs;
+    const ae = document.getElementById('adviceText');
+    if (ae) ae.textContent = S.advice[hs] || '';
+  }
 }
