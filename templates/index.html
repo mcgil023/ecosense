@@ -103,6 +103,12 @@
       <div class="weather-strip" id="weatherStrip">
         🌥 Loading weather...
       </div>
+      <!-- 24h Forecast Strip -->
+      <div id="forecastStrip" style="
+        display:flex; gap:6px; padding:6px 14px; overflow-x:auto;
+        border-bottom:1px solid #1e3320; background:#0d1a0e;
+        scrollbar-width:none;">
+      </div>
 
       <div class="hero-section">
         <div class="gauge-wrap">
@@ -168,6 +174,7 @@
       <div class="advice-box">
         <div class="advice-title">🤖 AI Field Advice</div>
         <div id="adviceText">Select crop and stage to begin analysis...</div>
+        <div id="weatherNote" style="margin-top:6px; font-size:11px; color:#7a9e7a;"></div>
       </div>
 
       <div class="decision-grid">
@@ -191,6 +198,19 @@
           <div class="d-label">Stage</div>
           <div class="d-value" id="d-stage">—</div>
         </div>
+      </div>
+
+      <!-- WhatsApp Alert Button -->
+      <div style="padding: 0 14px 6px;">
+        <button id="waBtn" onclick="sendWhatsApp()"
+          style="width:100%; background:#075e54; color:#fff; border:none;
+                 border-radius:10px; padding:9px 14px; font-size:13px;
+                 font-weight:700; cursor:pointer; display:flex;
+                 align-items:center; justify-content:center; gap:8px;
+                 transition: background .2s; opacity:0.5; pointer-events:none;">
+          <span style="font-size:16px;">📲</span>
+          Send WhatsApp Alert
+        </button>
       </div>
 
       <div class="trend-row">

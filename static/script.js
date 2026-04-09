@@ -217,12 +217,24 @@ async function runPredict() {
     }
     setText('d-irrigate', d.irrigate_now ? '✅ YES' : 'NO');
     setText('d-pump',     d.pump_locked  ? '🔒 LOCKED' : (d.pump_on ? '🟢 ON' : 'OFF'));
-    setText('d-gas',      d.gas_alert    ? '🚨 ALERT'  : '✅ CLEAR');
-    setText('d-stage',    stageEl.value);
-    setText('t-moist',    d.trend_moisture || 'stable');
-    setText('t-tds',      d.tds_safe ? '✅ Safe' : '⚠️ High');
-    setText('t-aqi',      d.field_aqi_label || '--');
+    setText('d-gas',   d.gas_alert ? '🚨 ALERT' : '✅ CLEAR');
+    setText('d-stage', stageEl.value);
+    setText('t-moist', d.trend_moisture || 'stable');
+    setText('t-tds',   d.tds_safe ? '✅ Safe' : '⚠️ High');
+    setText('t-aqi',   d.field_aqi_label || '--');
     if(gid('confText')) setText('confText', 'Confidence ' + d.confidence_pct + '%');
+    // WhatsApp alert button — activate on CRITICAL / gas alert
+    const waBtn = gid('waBtn');
+    if (waBtn) {
+      if (d.gas_alert || d.health_status === 'CRITICAL' || d.health_status === 'POOR') {
+        waBtn.classList.add('alert-active');
+        waBtn.title = 'Alert condition detected — click to notify farmer';
+      } else {
+        waBtn.classList.remove('alert-active');
+      }
+    }
+    // Weather note in advice box
+    if (d.weather_note && gid('weatherNote')) setText('weatherNote', '🌦 ' + d.weather_note);
   } catch(e) {
     console.error('Predict error:', e);
     setText('adviceText', 'Prediction error — server may be starting up. Retrying...');
@@ -303,7 +315,9 @@ async function boot() {
   fillStages();
   await loadStatus();
   await loadWeather();
-  setInterval(loadWeather, 60000);
+  await loadForecast();
+  setInterval(loadWeather,   60000);
+  setInterval(loadForecast,  1800000);  // refresh forecast every 30 min
   setMode('sim');
 }
 
@@ -342,3 +356,58 @@ async function sendChat() {
 const stageEl = gid('stageSel');
 if (stageEl) stageEl.addEventListener('change', runPredict);
 window.addEventListener('load', boot);
+
+// ── WhatsApp Alert ──────────────────────────────────────────
+function sendWhatsApp() {
+  const stageEl = gid('stageSel');
+  const score   = gid('scoreText')  ? gid('scoreText').textContent  : '--';
+  const status  = gid('healthTag')  ? gid('healthTag').textContent  : '--';
+  const gas     = gid('d-gas')      ? gid('d-gas').textContent      : '--';
+  const pump    = gid('d-pump')     ? gid('d-pump').textContent     : '--';
+  const stage   = stageEl           ? stageEl.value                 : '--';
+  const moist   = gid('v-moist')    ? gid('v-moist').textContent    : '--';
+  const temp    = gid('v-air')      ? gid('v-air').textContent      : '--';
+
+  const msg =
+    `🚨 *EcoSense Farm Alert*\n` +
+    `Crop: ${currentCrop.toUpperCase()} (${stage})\n` +
+    `Health: ${score}/100 — ${status}\n` +
+    `Moisture: ${moist} | Temp: ${temp}\n` +
+    `Gas: ${gas} | Pump: ${pump}\n` +
+    `⚠️ Immediate attention required!\n` +
+    `Dashboard: https://ecosense-fntj.onrender.com`;
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ── Forecast Strip ──────────────────────────────────────────
+async function loadForecast() {
+  try {
+    const d = await fetch('/forecast').then(r => r.json());
+    const strip = gid('forecastStrip');
+    if (!strip || !d.enabled || !d.next24h.length) {
+      if (strip) strip.innerHTML = '<span style="font-size:11px;color:#4a6e4a;padding:4px 0;">Forecast unavailable</span>';
+      return;
+    }
+    const icons = {
+      'Rain':'🌧','Drizzle':'🌦','Thunderstorm':'⛈️',
+      'Clouds':'☁️','Clear':'☀️','Mist':'🌫️','Haze':'🌫️','Snow':'❄️'
+    };
+    strip.innerHTML = d.next24h.map(s => `
+      <div style="min-width:62px;background:#162118;border:1px solid #1e3320;
+                  border-radius:8px;padding:5px 6px;text-align:center;flex-shrink:0;">
+        <div style="font-size:10px;color:#7a9e7a">${s.time}</div>
+        <div style="font-size:16px;margin:2px 0">${icons[s.desc]||'🌤'}</div>
+        <div style="font-size:11px;font-weight:700;color:#e0f0e0">${s.temp}°</div>
+        ${s.rain > 0 ? `<div style="font-size:10px;color:#4fc3f7">💧${s.rain}mm</div>` : ''}
+      </div>
+    `).join('');
+
+    // Update forecast summary note
+    if (gid('weatherNote')) {
+      setText('weatherNote', d.summary);
+    }
+  } catch(e) {
+    console.error('Forecast error:', e);
+  }
+}

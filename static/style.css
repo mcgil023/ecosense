@@ -708,3 +708,14 @@ html, body {
   color: #7a9e7a;
   margin-top: 3px;
 }
+
+#waBtn:hover { background: #128c7e !important; }
+#waBtn.alert-active {
+  opacity: 1 !important;
+  pointer-events: all !important;
+  animation: wa-pulse 1.5s ease-in-out infinite;
+}
+@keyframes wa-pulse {
+  0%,100% { box-shadow: 0 0 0 rgba(7,94,84,0); }
+  50%      { box-shadow: 0 0 14px rgba(18,140,126,.7); }
+}
