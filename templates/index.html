@@ -25,11 +25,7 @@
       </div>
       <span class="ai-badge" id="aiBadge">🤖 AI</span>
       <span class="weather-pill" id="weatherPill">☁️ --°C</span>
-      <button id="langBtn" onclick="toggleLang()"
-  style="background:#162118;color:#2ecc71;border:1px solid #1e3320;
-         border-radius:14px;padding:4px 12px;font-size:11px;font-weight:700;
-         cursor:pointer;transition:all .2s;">🇮🇳 தமிழ்</button>
-<span class="clock" id="clock">--:--:--</span>
+      <span class="clock" id="clock">--:--:--</span>
     </div>
   </header>
 
@@ -38,11 +34,11 @@
 
     <!-- LEFT: Sensors -->
     <aside class="left-panel">
-      <div class="panel-title">Live Sensor Readings</div>
+      <div class="panel-title">நேரடி உணரி அளவீடுகள்</div>
 
       <div class="sensor-card">
         <div class="sensor-row">
-          <span class="sensor-label">💧 Soil Moisture</span>
+          <span class="sensor-label">💧 மண் ஈரப்பதம்</span>
           <span class="sensor-value" id="v-moist">—</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="b-moist" style="width:4%"></div></div>
@@ -50,7 +46,7 @@
 
       <div class="sensor-card">
         <div class="sensor-row">
-          <span class="sensor-label">🧂 Water TDS</span>
+          <span class="sensor-label">🧂 நீர் TDS</span>
           <span class="sensor-value" id="v-tds">—</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="b-tds" style="width:4%"></div></div>
@@ -58,7 +54,7 @@
 
       <div class="sensor-card">
         <div class="sensor-row">
-          <span class="sensor-label">🌡️ Air Temp</span>
+          <span class="sensor-label">🌡️ காற்று வெப்பம்</span>
           <span class="sensor-value" id="v-air">—</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="b-air" style="width:4%"></div></div>
@@ -66,7 +62,7 @@
 
       <div class="sensor-card">
         <div class="sensor-row">
-          <span class="sensor-label">💦 Humidity</span>
+          <span class="sensor-label">💦 ஈரப்பதம்</span>
           <span class="sensor-value" id="v-hum">—</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="b-hum" style="width:4%"></div></div>
@@ -74,14 +70,14 @@
 
       <div class="sensor-card">
         <div class="sensor-row">
-          <span class="sensor-label">🌱 Soil Temp</span>
+          <span class="sensor-label">🌱 மண் வெப்பம்</span>
           <span class="sensor-value" id="v-soiltemp">—</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="b-soiltemp" style="width:4%"></div></div>
       </div>
 
       <div class="gas-section">
-        <div class="panel-title" style="margin-top:4px">Gas Sensors</div>
+        <div class="panel-title" style="margin-top:4px">வாயு உணரிகள்</div>
         <div class="gas-grid">
           <div class="gas-card">
             <div class="gas-icon">☁️</div>
@@ -143,7 +139,7 @@
           <!-- Score below arc -->
           <div class="gauge-score-row">
             <span class="gauge-score" id="scoreText">--</span>
-            <span class="gauge-sub">HEALTH SCORE / 100</span>
+            <span class="gauge-sub">ஆரோக்கிய மதிப்பெண் / 100</span>
             <span id="confText">--</span>
           </div>
         </div>
@@ -176,7 +172,7 @@
       </div>
 
       <div class="advice-box">
-        <div class="advice-title">🤖 AI Field Advice</div>
+        <div class="advice-title">🤖 AI வயல் ஆலோசனை</div>
         <div id="adviceText">Select crop and stage to begin analysis...</div>
         <div id="weatherNote" style="margin-top:6px; font-size:11px; color:#7a9e7a;"></div>
       </div>
@@ -184,22 +180,22 @@
       <div class="decision-grid">
         <div class="decision-card">
           <div class="d-icon">💧</div>
-          <div class="d-label">Irrigate</div>
+          <div class="d-label">நீர்ப்பாசனம்</div>
           <div class="d-value" id="d-irrigate">—</div>
         </div>
         <div class="decision-card">
           <div class="d-icon">⚙️</div>
-          <div class="d-label">Pump</div>
+          <div class="d-label">பம்ப்</div>
           <div class="d-value" id="d-pump">—</div>
         </div>
         <div class="decision-card">
           <div class="d-icon">⚠️</div>
-          <div class="d-label">Gas</div>
+          <div class="d-label">வாயு</div>
           <div class="d-value" id="d-gas">—</div>
         </div>
         <div class="decision-card">
           <div class="d-icon">🌾</div>
-          <div class="d-label">Stage</div>
+          <div class="d-label">நிலை</div>
           <div class="d-value" id="d-stage">—</div>
         </div>
       </div>
@@ -219,15 +215,15 @@
 
       <div class="trend-row">
         <div class="trend-item">
-          <span class="trend-key">Moisture Trend:</span>
+          <span class="trend-key">ஈரப்பதம்:</span>
           <span class="trend-val" id="t-moist">—</span>
         </div>
         <div class="trend-item">
-          <span class="trend-key">Water:</span>
+          <span class="trend-key">நீர்:</span>
           <span class="trend-val" id="t-tds">—</span>
         </div>
         <div class="trend-item">
-          <span class="trend-key">Air Quality:</span>
+          <span class="trend-key">காற்று தரம்:</span>
           <span class="trend-val" id="t-aqi">—</span>
         </div>
       </div>
@@ -236,7 +232,7 @@
     <!-- RIGHT: Chat -->
     <aside class="right-panel">
       <div class="chat-head">
-        <span class="chat-head-title">🌿 AI Farming Companion</span>
+        <span class="chat-head-title">🌿 AI வேளாண் உதவியாளர்</span>
         <div class="chat-status-dot">
           <div class="dot" id="chatDot"></div>
           <span id="chatStatus">OFFLINE</span>
@@ -244,7 +240,7 @@
       </div>
 
       <div class="chat-box" id="chatBox">
-        <div class="bot">👋 Hi! I'm your AI Farming Companion. Ask me anything! 🌱</div>
+        <div class="bot">👋 Hi! I'm your AI வேளாண் உதவியாளர். Ask me anything! 🌱</div>
       </div>
 
       <div class="quick-grid">
@@ -257,7 +253,7 @@
       </div>
 
       <div class="chat-input-row">
-        <input id="chatInput" placeholder="Ask me anything about your farm..." />
+        <input id="chatInput" placeholder="உங்கள் வயலைப் பற்றி கேளுங்கள்..." />
         <button onclick="sendChat()">➤</button>
       </div>
     </aside>
