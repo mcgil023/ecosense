@@ -205,40 +205,87 @@ def live():
 def chat():
     try:
         d       = request.json or {}
-        msg     = d.get("message","").strip()
-        crop    = d.get("crop","rice")
-        stage   = d.get("stage","germination")
+        msg     = d.get("message", "").strip()
+        crop    = d.get("crop", "rice")
+        stage   = d.get("stage", "germination")
         sensors = dict(d.get("sensors", {}))
         if esp32_data: sensors.update(esp32_data)
         result  = predict(crop, stage, sensors, get_weather())
         sd      = result["sensors_used"]
+        cfg     = CROP_CONFIG.get(crop, CROP_CONFIG["rice"])
+        msg_l   = msg.lower()
 
-        # ── Simple rule-based offline fallback ─────────────────
-        tips = {
-            "GOOD":     "Crop looks healthy. Keep monitoring.",
-            "MODERATE": "Crop needs attention soon.",
-            "POOR":     "Crop is struggling. Take action.",
-            "CRITICAL": "Urgent! Crop is in critical condition."
-        }
-        offline = (
-            f"{tips.get(result['health_status'],'')} "
-            f"Moisture: {sd['soil_moisture']:.0f}%. "
-            f"{'Irrigate now. ' if result['irrigate_now'] else ''}"
-            f"{'⚠️ Gas danger! ' if result['gas_alert'] else ''}"
-            f"TDS: {'Safe' if result['tds_safe'] else 'High'}."
-        )
+        # ── Smart rule-based offline ────────────────────────────
+        if any(w in msg_l for w in ["irrigat","water","pump"]):
+            if result["irrigate_now"]:
+                offline = (f"Yes, irrigate now. Soil moisture is {sd['soil_moisture']:.0f}% — "
+                           f"below the minimum {cfg['moist_min']}% needed for {crop} at {stage} stage.")
+            elif result["gas_alert"]:
+                offline = "Do not irrigate — gas alert active (NH3/CH4/CO high). Ventilate field first."
+            else:
+                offline = (f"No irrigation needed. Soil moisture is {sd['soil_moisture']:.0f}%, "
+                           f"adequate for {crop} at {stage} stage.")
 
+        elif any(w in msg_l for w in ["gas","ammonia","methane"," co ","toxic","air","smell"]):
+            if result["gas_alert"]:
+                offline = (f"⚠️ Gas alert! NH3: {sd['mq135_ammonia']:.0f}ppm, "
+                           f"CH4: {sd['mq4_methane']:.0f}ppm, CO: {sd['mq7_co']:.0f}ppm. "
+                           f"Keep workers away and ventilate immediately.")
+            else:
+                offline = (f"Air quality safe. NH3: {sd['mq135_ammonia']:.0f}ppm, "
+                           f"CH4: {sd['mq4_methane']:.0f}ppm, CO: {sd['mq7_co']:.0f}ppm.")
+
+        elif any(w in msg_l for w in ["tds","saline","salt","quality"]):
+            if result["tds_safe"]:
+                offline = (f"Water quality is good. TDS: {sd['tds_ppm']:.0f}ppm — "
+                           f"within the safe {cfg['tds_max']}ppm limit for {crop}.")
+            else:
+                offline = (f"⚠️ TDS too high: {sd['tds_ppm']:.0f}ppm (limit: {cfg['tds_max']}ppm). "
+                           f"Use filtered or fresh water for irrigation.")
+
+        elif any(w in msg_l for w in ["temp","heat","hot","cold"]):
+            t = sd['air_temp_c']
+            note = "Too hot — increase irrigation frequency." if t > 38 else ("Too cold — protect seedlings." if t < 15 else "Temperature is normal.")
+            offline = f"Air temp: {t:.1f}°C, Soil temp: {sd['soil_temp_c']:.1f}°C. {note}"
+
+        elif any(w in msg_l for w in ["fertiliz","nutrient","npk","urea"]):
+            if result["health_status"] in ["GOOD","MODERATE"]:
+                offline = (f"Safe to fertilize. Moisture is {sd['soil_moisture']:.0f}% and no gas issues. "
+                           f"Use nitrogen-based fertilizer for {crop} at {stage}.")
+            else:
+                offline = f"Fix health issues first (score: {result['health_score']}/100) before fertilizing."
+
+        elif any(w in msg_l for w in ["health","status","condition","score"]):
+            offline = (f"{crop.title()} at {stage}: health {result['health_score']}/100 ({result['health_status']}). "
+                       f"Moisture: {sd['soil_moisture']:.0f}%, Temp: {sd['air_temp_c']:.1f}°C, "
+                       f"Humidity: {sd['humidity_pct']:.0f}%.")
+
+        elif any(w in msg_l for w in ["harvest","ready","when"]):
+            offline = (f"{crop.title()} is at {stage} stage. "
+                       f"Monitor until maturity. Health score: {result['health_score']}/100. "
+                       f"Maintain moisture above {cfg['moist_min']}%.")
+        else:
+            offline = (f"{crop.title()} ({stage}) — Health: {result['health_score']}/100 ({result['health_status']}). "
+                       f"Moisture: {sd['soil_moisture']:.0f}%, TDS: {sd['tds_ppm']:.0f}ppm, "
+                       f"Temp: {sd['air_temp_c']:.1f}°C. "
+                       f"{'Irrigate now. ' if result['irrigate_now'] else ''}"
+                       f"{'⚠️ Gas alert!' if result['gas_alert'] else 'All systems clear.'}")
+
+        # ── Gemini ──────────────────────────────────────────────
         if gemini_client:
             try:
                 prompt = (
-                    f"You are EcoSense, a smart farming AI. "
+                    f"You are EcoSense, a smart farming assistant for Indian farmers. "
                     f"Crop: {crop}, Stage: {stage}. "
-                    f"Moisture: {sd['soil_moisture']:.0f}%, TDS: {sd['tds_ppm']:.0f}ppm, "
-                    f"Temp: {sd['air_temp_c']:.1f}C, Humidity: {sd['humidity_pct']:.0f}%. "
-                    f"Health: {result['health_status']} ({result['health_score']}/100). "
-                    f"Irrigate: {result['irrigate_now']}, Gas alert: {result['gas_alert']}. "
-                    f"Farmer says: {msg}. "
-                    f"Reply in 1-2 short practical sentences only."
+                    f"Sensor data — Moisture: {sd['soil_moisture']:.0f}% (min: {cfg['moist_min']}%), "
+                    f"TDS: {sd['tds_ppm']:.0f}ppm (max: {cfg['tds_max']}ppm), "
+                    f"Air temp: {sd['air_temp_c']:.1f}°C, Soil temp: {sd['soil_temp_c']:.1f}°C, "
+                    f"Humidity: {sd['humidity_pct']:.0f}%, "
+                    f"NH3: {sd['mq135_ammonia']:.0f}ppm, CH4: {sd['mq4_methane']:.0f}ppm, CO: {sd['mq7_co']:.0f}ppm. "
+                    f"Health: {result['health_score']}/100 ({result['health_status']}). "
+                    f"Irrigate: {result['irrigate_now']}, Gas alert: {result['gas_alert']}, Water safe: {result['tds_safe']}. "
+                    f"Farmer asks: \"{msg}\". "
+                    f"Answer in exactly 2 sentences. Use actual sensor numbers. Be direct, no greetings."
                 )
                 resp = gemini_client.generate_content(prompt)
                 return jsonify({"reply": resp.text.strip(), "source": "gemini"})
