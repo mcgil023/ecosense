@@ -1,6 +1,6 @@
 
-function quickAskIdx(i) {
-  const q = T('quickQ')[i];
+function quickAsk(i) {
+  const q = UI_STRINGS[uiLang].quickQuestions[i];
   if(q) { if(gid('chatInput')) gid('chatInput').value=q; sendChat(); }
 }
 
@@ -55,7 +55,8 @@ function setMode(mode) {
 // ── Live Poll ───────────────────────────────────────────────────
 function startLivePoll() {
   stopLivePoll();
-  startSSE();
+  fetchLive();
+  liveInterval = setInterval(fetchLive, 2000);
 }
 function stopLivePoll() {
   if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
@@ -419,45 +420,6 @@ async function loadForecast() {
   }
 }
 
-// ── Server-Sent Events — real push, no polling ───────────────
-let _sseSource = null;
-let _sseRetry  = 2000;
-
-function startSSE() {
-  stopSSE();
-  try {
-    _sseSource = new EventSource('/stream');
-    _sseSource.onopen = () => {
-      console.log('✅ SSE connected');
-      _sseRetry = 2000;
-      setText('modeTag', T('modeTag_live'));
-    };
-    _sseSource.onmessage = (e) => {
-      try {
-        const d = JSON.parse(e.data);
-        if (d._ping) return;           // heartbeat
-        currentSensors = Object.assign({}, currentSensors, d);
-        renderSensors(currentSensors);
-        runPredict();
-      } catch(err) { console.warn('SSE parse:', err); }
-    };
-    _sseSource.onerror = () => {
-      console.warn('SSE error — retrying in', _sseRetry, 'ms');
-      stopSSE();
-      setTimeout(startSSE, _sseRetry);
-      _sseRetry = Math.min(_sseRetry * 2, 30000); // backoff max 30s
-    };
-  } catch(err) {
-    console.error('SSE not supported — falling back to poll');
-    liveInterval = setInterval(fetchLive, 2000);
-  }
-}
-
-function stopSSE() {
-  if (_sseSource) { _sseSource.close(); _sseSource = null; }
-  if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
-}
-
 // ── UI Language Toggle (EN ↔ TA) ────────────────────────────
 // Only sensor labels, health status, advice, decisions toggle
 // Sim menu, mode buttons always stay English
@@ -469,11 +431,10 @@ const UI_STRINGS = {
     adviceTitle:   "🤖 AI Field Advice",
     chatHead:      "🌿 AI Farming Companion",
     chatPlaceholder: "Ask me anything about your farm...",
-    chatWelcome:   "👋 Hi! I'm your AI Farming Companion. Ask me anything! 🌱",
     gaugeLabel:    "HEALTH SCORE / 100",
     decisions:     ["Irrigate","Pump","Gas","Stage"],
     trendKeys:     ["Moisture Trend:","Water:","Air Quality:"],
-    health: { GOOD:"🌱 GOOD", MODERATE:"⚠️ MODERATE", POOR:"😢 POOR", CRITICAL:"💀 CRITICAL" },
+    health: {GOOD:"🌱 GOOD",MODERATE:"⚠️ MODERATE",POOR:"😢 POOR",CRITICAL:"💀 CRITICAL"},
     advice: {
       GOOD:     "✅ Crop looks healthy. Keep monitoring.",
       MODERATE: "⚠️ Crop needs attention. Check moisture & temperature.",
@@ -482,6 +443,9 @@ const UI_STRINGS = {
     },
     langBtn: "🇮🇳 TA",
     waBtn:   "📲 Send WhatsApp Alert",
+    quickLabels: ["💧 Irrigate?","🧂 Water safe?","🌱 Health?","🌿 Fertilize?","☁️ Air quality?","⚙️ Pump status?"],
+    quickQuestions: ["Should I irrigate now?","Is water quality safe?","How is crop health?",
+                     "Can I fertilize now?","Is air quality safe?","What is pump status?"],
   },
   ta: {
     sensorPanel:   "நேரடி உணரி அளவீடுகள்",
@@ -489,11 +453,10 @@ const UI_STRINGS = {
     adviceTitle:   "🤖 AI வயல் ஆலோசனை",
     chatHead:      "🌿 AI வேளாண் உதவியாளர்",
     chatPlaceholder: "உங்கள் வயலைப் பற்றி கேளுங்கள்...",
-    chatWelcome:   "👋 வணக்கம்! நான் உங்கள் AI வேளாண் உதவியாளர். எதையும் கேளுங்கள்! 🌱",
     gaugeLabel:    "ஆரோக்கிய மதிப்பெண் / 100",
     decisions:     ["நீர்ப்பாசனம்","பம்ப்","வாயு","நிலை"],
     trendKeys:     ["ஈரப்பதம்:","நீர்:","காற்று தரம்:"],
-    health: { GOOD:"🌱 நல்லது", MODERATE:"⚠️ நடுத்தரம்", POOR:"😢 மோசம்", CRITICAL:"💀 அவசரம்" },
+    health: {GOOD:"🌱 நல்லது",MODERATE:"⚠️ நடுத்தரம்",POOR:"😢 மோசம்",CRITICAL:"💀 அவசரம்"},
     advice: {
       GOOD:     "✅ பயிர் ஆரோக்கியமாக உள்ளது. தொடர்ந்து கண்காணியுங்கள்.",
       MODERATE: "⚠️ பயிருக்கு கவனிப்பு தேவை. ஈரப்பதம் & வெப்பம் சரிபாருங்கள்.",
@@ -502,10 +465,13 @@ const UI_STRINGS = {
     },
     langBtn: "🇬🇧 EN",
     waBtn:   "📲 வாட்ஸ்அப் எச்சரிக்கை அனுப்பு",
+    quickLabels: ["💧 பாசனமா?","🧂 நீர் பாதுகாப்பா?","🌱 ஆரோக்கியம்?","🌿 உரமிடலாமா?","☁️ காற்று தரம்?","⚙️ பம்ப் நிலை?"],
+    quickQuestions: ["இப்போது நீர் பாய்ச்சலாமா?","நீர் தரம் பாதுகாப்பானதா?",
+                     "பயிரின் ஆரோக்கியம் எப்படி?","இப்போது உரமிடலாமா?",
+                     "காற்று தரம் பாதுகாப்பானதா?","பம்ப் நிலை என்ன?"],
   }
 };
-
-let uiLang = 'ta';   // default Tamil for readings/advice
+let uiLang = 'ta'; // default Tamil for readings/advice
 
 function toggleUILang() {
   uiLang = (uiLang === 'ta') ? 'en' : 'ta';
@@ -549,6 +515,11 @@ function applyUILang() {
 
   // Lang toggle button label
   const lb = gid('langToggleBtn'); if (lb) lb.textContent = S.langBtn;
+
+  // Quick prompt buttons
+  const qbtns = document.querySelectorAll('.quick-grid button');
+  const qlbls = S.quickLabels;
+  qbtns.forEach((b,i)=>{ if(qlbls[i]) b.textContent=qlbls[i]; });
 
   // Re-render health status & advice if result available
   if (window._lastResult) {
