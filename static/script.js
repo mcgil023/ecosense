@@ -152,6 +152,58 @@ async function runPredict() {
       else if (d.health_status === 'POOR')     tag.classList.add('poor');
       else if (d.health_status === 'CRITICAL') tag.classList.add('critical');
     }
+
+    // Animated crop face morph
+    const face   = gid('cropFace');
+    const eyeL   = gid('eye-l');
+    const eyeR   = gid('eye-r');
+    const mouth  = gid('mouth');
+    const sparks = gid('sparkles');
+    const svg    = gid('cropSvg');
+
+    if (face) {
+      face.className = 'crop-face';
+      const s = d.health_status;
+
+      // Face class for animation
+      face.classList.add(
+        s === 'GOOD'     ? 'face-good'     :
+        s === 'MODERATE' ? 'face-moderate' :
+        s === 'POOR'     ? 'face-poor'     : 'face-critical'
+      );
+
+      // Eye color
+      const eyeColor = s==='GOOD' ? '#2ecc71' : s==='MODERATE' ? '#f1c40f' : s==='POOR' ? '#e67e22' : '#e74c3c';
+      if(eyeL) eyeL.setAttribute('fill', eyeColor);
+      if(eyeR) eyeR.setAttribute('fill', eyeColor);
+
+      // Stem/head color
+      svg?.querySelectorAll('line,ellipse:not(#eye-l):not(#eye-r)').forEach(el => {
+        if(el.tagName==='line'||el.getAttribute('stroke'))
+          el.setAttribute('stroke', eyeColor);
+      });
+
+      // Mouth shape
+      if (mouth) {
+        if      (s === 'GOOD')     mouth.setAttribute('d','M33 43 Q40 50 47 43'); // big smile
+        else if (s === 'MODERATE') mouth.setAttribute('d','M33 44 Q40 46 47 44'); // slight smile
+        else if (s === 'POOR')     mouth.setAttribute('d','M33 47 Q40 44 47 47'); // frown
+        else                       mouth.setAttribute('d','M32 48 Q40 42 48 48'); // deep frown
+        mouth.setAttribute('stroke', eyeColor);
+      }
+
+      // Eyes: X eyes for critical
+      if (eyeL && eyeR) {
+        if (s === 'CRITICAL') {
+          eyeL.setAttribute('rx','3'); eyeL.setAttribute('ry','1.2');
+          eyeR.setAttribute('rx','3'); eyeR.setAttribute('ry','1.2');
+        } else {
+          eyeL.setAttribute('r','2.8'); eyeR.setAttribute('r','2.8');
+        }
+      }
+      // Hide sparkles if not good
+      if (sparks) sparks.style.display = s==='GOOD' ? '' : 'none';
+    }
     setText('d-irrigate', d.irrigate_now ? '✅ YES' : 'NO');
     setText('d-pump',     d.pump_locked  ? '🔒 LOCKED' : (d.pump_on ? '🟢 ON' : 'OFF'));
     setText('d-gas',      d.gas_alert    ? '🚨 ALERT'  : '✅ CLEAR');

@@ -279,7 +279,7 @@ def chat():
                     f"Health: {result['health_score']}/100 ({result['health_status']}). "
                     f"Irrigate: {result['irrigate_now']}, Gas alert: {result['gas_alert']}, Water safe: {result['tds_safe']}. "
                     f"Farmer asks: \"{msg}\". "
-                    f"Answer in exactly 2 sentences. Use actual sensor numbers. Be direct, no greetings."
+                    f"Give a very simple, friendly answer in 1-2 short sentences. Use plain farmer-friendly language. No technical jargon. No data dumps. Just clear advice."
                 )
                 resp = gemini_client.generate_content(prompt)
                 return jsonify({"reply": resp.text.strip(), "source": "gemini"})
