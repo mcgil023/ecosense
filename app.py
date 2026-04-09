@@ -13,14 +13,22 @@ gemini_client = None
 
 if GEMINI_API_KEY:
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_client = genai.GenerativeModel("gemini-2.0-flash")
-        print("✅ Gemini ready")
+        from google import genai as _genai
+        _client = _genai.Client(api_key=GEMINI_API_KEY)
+        class _GeminiWrapper:
+            def __init__(self, c): self._c = c
+            def generate_content(self, prompt):
+                r = self._c.models.generate_content(
+                    model="gemini-2.0-flash", contents=prompt)
+                class _R:
+                    def __init__(self, t): self.text = t
+                return _R(r.text)
+        gemini_client = _GeminiWrapper(_client)
+        print("✅ Gemini ready (google-genai)")
     except Exception as e:
         print(f"❌ Gemini init failed: {e}")
 else:
-    print("⚠️  GEMINI_API_KEY not set — chat will use offline mode")
+    print("⚠️  GEMINI_API_KEY not set — offline mode")
 
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY", "")
 WEATHER_CITY    = os.environ.get("WEATHER_CITY", "Tiruchirappalli")
