@@ -123,18 +123,8 @@ async function runPredict() {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Predict failed');
 
-    const healthLabels = {
-      'GOOD':     '🌱 HEALTHY',
-      'MODERATE': '⚠️ MODERATE',
-      'POOR':     '🔴 POOR',
-      'CRITICAL': '💀 CRITICAL'
-    };
-    const adviceMap = {
-      'GOOD':     '✅ பயிர் ஆரோக்கியமாக உள்ளது. தொடர்ந்து கண்காணியுங்கள்.',
-      'MODERATE': '⚠️ பயிருக்கு கவனிப்பு தேவை. ஈரப்பதம் & வெப்பம் சரிபாருங்கள்.',
-      'POOR':     '🔴 பயிர் கஷ்டப்படுகிறது. நீர் பாய்ச்சி வயலை சோதியுங்கள்.',
-      'CRITICAL': '💀 அவசரம் — உடனடி நடவடிக்கை தேவை!'
-    };
+    const healthLabels = UI_STRINGS[uiLang].health;
+    const adviceMap = UI_STRINGS[uiLang].advice;};
 
     // Update score
     setText('scoreText',  d.health_score);
@@ -228,7 +218,7 @@ async function runPredict() {
     setText('t-moist', d.trend_moisture || 'stable');
     setText('t-tds',   d.tds_safe ? '✅ Safe' : '⚠️ High');
     setText('t-aqi',   d.field_aqi_label || '--');
-    if(gid('confText')) setText('confText', 'Confidence ' + d.confidence_pct + '%');
+    if(gid('confText')) setText('confText', (uiLang==='ta'?'நம்பகத்தன்மை ':'Confidence ') + d.confidence_pct + '%');
     // WhatsApp alert button — activate on CRITICAL / gas alert
     const waBtn = gid('waBtn');
     if (waBtn) {
@@ -240,7 +230,27 @@ async function runPredict() {
       }
     }
     // Weather note in advice box
-    if (d.weather_note && gid('weatherNote')) setText('weatherNote', '🌦 ' + d.weather_note);
+    if (d.weather_note && gid('weatherNote')) {
+      const _wm = UI_STRINGS[uiLang].weatherMap || {};
+      let _wt = d.weather_note;
+      if (uiLang === 'ta') {
+        const _wmap = {
+          'Stable weather next 24h': '🌤 அடுத்த 24 மணி நேரம் நிலையான வானிலை',
+          'Light rain expected': '🌦 இலேசான மழை எதிர்பார்க்கப்படுகிறது — நீர்ப்பாசனம் குறைக்கவும்',
+          'Heavy rain': '🌧 கனமழை வரும் — நீர்ப்பாசனம் தவிர்க்கவும்',
+          'Stable weather': '🌤 நிலையான வானிலை',
+          'Weather normal': '🌤 வானிலை சாதாரணம்',
+          'Forecast unavailable': 'வானிலை கணிப்பு இல்லை',
+          'Heat': '🌡️ வெப்பம்',
+          'irrigate early': 'காலையில் நீர் பாய்ச்சுங்கள்',
+          'skip irrigation': 'நீர்ப்பாசனம் தவிர்க்கவும்'
+        };
+        for (const [en, ta] of Object.entries(_wmap)) {
+          if (_wt.includes(en)) { _wt = ta; break; }
+        }
+      }
+      setText('weatherNote', _wt);
+    }
   } catch(e) {
     console.error('Predict error:', e);
     setText('adviceText', 'Prediction error — server may be starting up. Retrying...');
@@ -443,6 +453,11 @@ const UI_STRINGS = {
     },
     langBtn: "🇮🇳 TA",
     waBtn:   "📲 Send WhatsApp Alert",
+    trendVals:  {stable:"Stable", rising:"Rising", falling:"Falling"},
+    tdsOk:      "✅ Safe",
+    tdsHigh:    "⚠️ High",
+    aqiLabels:  {Excellent:"Excellent", Good:"Good", Moderate:"Moderate", Poor:"Poor"},
+    weatherMap: {},
     quickLabels: ["💧 Irrigate?","🧂 Water safe?","🌱 Health?","🌿 Fertilize?","☁️ Air quality?","⚙️ Pump status?"],
     quickQuestions: ["Should I irrigate now?","Is water quality safe?","How is crop health?",
                      "Can I fertilize now?","Is air quality safe?","What is pump status?"],
@@ -465,6 +480,15 @@ const UI_STRINGS = {
     },
     langBtn: "🇬🇧 EN",
     waBtn:   "📲 வாட்ஸ்அப் எச்சரிக்கை அனுப்பு",
+    trendVals:  {stable:"நிலையான", rising:"உயர்கிறது", falling:"குறைகிறது"},
+    tdsOk:      "✅ பாதுகாப்பு",
+    tdsHigh:    "⚠️ அதிகம்",
+    aqiLabels:  {Excellent:"மிகவும் நல்லது", Good:"நல்லது", Moderate:"நடுத்தரம்", Poor:"மோசம்"},
+    weatherMap: {
+      "Stable weather":"நிலையான வானிலை","Heavy rain":"கனமழை","skip irrigation":"நீர்ப்பாசனம் தவிர்க்கவும்",
+      "Light rain":"இலேசான மழை","Heat":"வெப்பம்","ahead":"வரும்","irrigate early":"காலையில் நீர் பாய்ச்சுங்கள்",
+      "rain_coming":"மழை வரும்","No rain":"மழை இல்லை","normal":"சாதாரணம்"
+    },
     quickLabels: ["💧 பாசனமா?","🧂 நீர் பாதுகாப்பா?","🌱 ஆரோக்கியம்?","🌿 உரமிடலாமா?","☁️ காற்று தரம்?","⚙️ பம்ப் நிலை?"],
     quickQuestions: ["இப்போது நீர் பாய்ச்சலாமா?","நீர் தரம் பாதுகாப்பானதா?",
                      "பயிரின் ஆரோக்கியம் எப்படி?","இப்போது உரமிடலாமா?",
@@ -521,12 +545,37 @@ function applyUILang() {
   const qlbls = S.quickLabels;
   qbtns.forEach((b,i)=>{ if(qlbls[i]) b.textContent=qlbls[i]; });
 
-  // Re-render health status & advice if result available
+  // Re-render all dynamic values using current language
   if (window._lastResult) {
-    const hs = window._lastResult.health_status || 'GOOD';
-    const el = document.getElementById('healthStatus');
-    if (el) el.textContent = S.health[hs] || hs;
-    const ae = document.getElementById('adviceText');
-    if (ae) ae.textContent = S.advice[hs] || '';
+    const d  = window._lastResult;
+    const hs = d.health_status || 'GOOD';
+    const hel = document.getElementById('healthStatus');
+    if (hel) hel.textContent = S.health[hs] || hs;
+    const ael = document.getElementById('adviceText');
+    if (ael) ael.textContent = S.advice[hs] || '';
+    // Trend / TDS / AQI
+    const tv = S.trendVals || {};
+    const tel = document.getElementById('t-moisture');
+    if (tel) tel.textContent = tv[d.trend_moisture] || d.trend_moisture || 'stable';
+    const tdsel = document.getElementById('t-tds');
+    if (tdsel) tdsel.textContent = d.tds_safe ? (S.tdsOk||'✅ Safe') : (S.tdsHigh||'⚠️ High');
+    const aqiel = document.getElementById('t-aqi');
+    if (aqiel) aqiel.textContent = (S.aqiLabels && S.aqiLabels[d.field_aqi_label]) || d.field_aqi_label || '--';
+    // Weather
+    if (d.weather_note && document.getElementById('weatherNote')) {
+      const _wmap = S === UI_STRINGS.ta ? {
+        'Stable weather next 24h': '🌤 அடுத்த 24 மணி நேரம் நிலையான வானிலை',
+        'Light rain expected': '🌦 இலேசான மழை எதிர்பார்க்கப்படுகிறது',
+        'Heavy rain': '🌧 கனமழை வரும் — நீர்ப்பாசனம் தவிர்க்கவும்',
+        'Stable weather': '🌤 நிலையான வானிலை',
+        'Weather normal': '🌤 வானிலை சாதாரணம்',
+        'Forecast unavailable': 'வானிலை கணிப்பு இல்லை'
+      } : {};
+      let _wt = d.weather_note;
+      for (const [en, ta] of Object.entries(_wmap)) {
+        if (_wt.includes(en)) { _wt = ta; break; }
+      }
+      document.getElementById('weatherNote').textContent = _wt;
+    }
   }
 }
