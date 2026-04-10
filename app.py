@@ -94,7 +94,7 @@ def chat_reply(msg,result,sd,crop,cfg,lang):
         if result["irrigate_now"]:
             return (f"இப்போது நீர் பாய்ச்சுங்கள்! ஈரப்பதம் {mst}% — {cta}க்கு {cfg['moist_min']}% தேவை." if is_ta else f"Irrigate now! Moisture {mst}% below {cfg['moist_min']}% for {crop}.")
         return (f"நீர்ப்பாசனம் தேவையில்லை. ஈரப்பதம் {mst}% போதுமானது." if is_ta else f"No irrigation needed. Moisture {mst}% adequate.")
-    if any(w in ml for w in ["gas","ammonia","methane","வாயு"]):
+    if any(w in ml for w in ["gas","ammonia","methane","air quality","air safe","aqi","is air","காற்று","வாயு","காற்று தரம்"]):
         if result["gas_alert"]: return (f"வாயு எச்சரிக்கை! NH3:{round(sd.get('mq135_ammonia',0))}ppm. வெளியேறுங்கள்!" if is_ta else f"Gas alert! NH3:{round(sd.get('mq135_ammonia',0))}ppm. Evacuate!")
         return ("காற்று தரம் நல்லது." if is_ta else "Air quality safe.")
     if any(w in ml for w in ["health","score","ஆரோக்கிய"]):
@@ -169,7 +169,7 @@ def chat_r():
         if gemini_model:
             try:
                 li=("Reply ONLY in Tamil." if lang=="ta" else "Reply in simple English.")
-                prompt=(f"EcoSense AI Crop:{crop} Moisture:{sd.get('soil_moisture',0):.0f}% TDS:{sd.get('tds_ppm',0):.0f}ppm(max:{cfg['tds_max']}) Temp:{sd.get('air_temp_c',0):.1f}C Gas:{res['gas_alert']} PumpLocked:{res['pump_locked']} TDSSafe:{res['tds_safe']} Health:{res['health_score']}/100. Q:{msg}. {li} 2 sentences max.")
+                prompt=(f"EcoSense AI Crop:{crop} Stage:{stg} Moisture:{sd.get('soil_moisture',0):.0f}% TDS:{sd.get('tds_ppm',0):.0f}ppm(max:{cfg['tds_max']}) AirTemp:{sd.get('air_temp_c',0):.1f}C Humidity:{sd.get('humidity',0):.0f}% NH3:{sd.get('mq135_ammonia',0):.0f}ppm CH4:{sd.get('mq4_methane',0):.0f}ppm CO:{sd.get('mq7_co',0):.0f}ppm GasAlert:{res['gas_alert']} PumpLocked:{res['pump_locked']} TDSSafe:{res['tds_safe']} Health:{res['health_score']}/100 Status:{res['health_status']}. Q:{msg}. {li} 2 sentences max.")
                 r=gemini_model.generate_content(prompt)
                 return jsonify({"reply":r.text.strip(),"source":"gemini"})
             except Exception as e: print(f"Gemini: {e}")
