@@ -112,7 +112,7 @@ def crops_r(): return jsonify(CROPS)
 def predict_r():
     try:
         d=request.json or {}; w=get_weather(); s=dict(d.get("sensors",{}))
-        if esp32_data: s.update(esp32_data)
+        if esp32_data and d.get("mode","live") != "sim": s.update(esp32_data)  # sim fix
         return jsonify(predict(d.get("crop","rice"),d.get("stage","germination"),s,w))
     except Exception as e: return jsonify({"error":str(e)}),500
 @app.route("/weather")
