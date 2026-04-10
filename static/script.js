@@ -230,14 +230,17 @@ async function runPredict() {
     setText('adviceText', S.advice[hs]);
     setText('confText',   S.conf + (d.confidence_pct||'--') + '%');
 
-    // SVG arc gauge — stroke-dasharray + rotate transform
+    // SVG gauge — dashoffset method (most reliable)
     const fill   = gid('gaugeFill');
     const needle = gid('gaugeNeedle');
     const score  = d.health_score || 0;
-    const ARC    = 173;                             // π × r (55) ≈ 173
-    if (fill)   fill.setAttribute('stroke-dasharray', `${(score/100)*ARC} ${ARC}`);
+    const ARC    = 173;
+    if (fill) {
+      fill.setAttribute('stroke-dasharray', ARC);
+      fill.setAttribute('stroke-dashoffset', ARC - (score / 100) * ARC);
+    }
     if (needle) needle.setAttribute('transform',
-      `rotate(${-90 + (score/100)*180}, 60, 65)`); // -90° → +90°
+      `rotate(${-90 + (score / 100) * 180}, 60, 65)`);
 
     // Face animation
     const colors = {GOOD:'#2ecc71',MODERATE:'#f39c12',POOR:'#e67e22',CRITICAL:'#e74c3c'};
