@@ -1,413 +1,489 @@
+'use strict';
+// ═══════════════════════════════════════════════════════
+//  EcoSense script.js — FINAL CLEAN BUILD
+//  Tamil/English: readings + advice + chat only
+//  Sim menu stays English always
+// ═══════════════════════════════════════════════════════
 
-// ── State ──────────────────────────────────────────────────────
-let currentCrop = 'rice', cropStages = {};
-let MODE = 'sim';
+// ── Helpers ──────────────────────────────────────────────────
+const gid = id => document.getElementById(id);
+const setText = (id, t) => { const el = gid(id); if (el) el.textContent = t; };
+const setHTML = (id, h) => { const el = gid(id); if (el) el.innerHTML  = h; };
+
+// ── State ─────────────────────────────────────────────────────
+let MODE         = 'sim';
+let currentCrop  = 'rice';
+let currentLang  = 'ta';          // 'ta' = Tamil (default), 'en' = English
 let liveInterval = null;
+let currentSensors = {};
+let lastResult   = null;
 
-const SCENARIOS = {
-  normal:   {soil_moisture:72,  tds_ppm:350,  air_temp_c:28, humidity_pct:65, soil_temp_c:24, mq135_ammonia:50,  mq4_methane:200,  mq7_co:10},
-  dry:      {soil_moisture:28,  tds_ppm:420,  air_temp_c:34, humidity_pct:42, soil_temp_c:31, mq135_ammonia:60,  mq4_methane:220,  mq7_co:15},
-  saline:   {soil_moisture:55,  tds_ppm:1200, air_temp_c:30, humidity_pct:58, soil_temp_c:27, mq135_ammonia:70,  mq4_methane:250,  mq7_co:20},
-  gas:      {soil_moisture:68,  tds_ppm:360,  air_temp_c:29, humidity_pct:64, soil_temp_c:25, mq135_ammonia:260, mq4_methane:1400, mq7_co:140},
-  heat:     {soil_moisture:48,  tds_ppm:500,  air_temp_c:41, humidity_pct:30, soil_temp_c:36, mq135_ammonia:80,  mq4_methane:300,  mq7_co:22},
-  critical: {soil_moisture:18,  tds_ppm:1600, air_temp_c:43, humidity_pct:22, soil_temp_c:39, mq135_ammonia:320, mq4_methane:1800, mq7_co:170}
+const cropStages = {};   // filled by /crops
+
+// ── Language Strings ─────────────────────────────────────────
+const L = {
+  en: {
+    ptSensor:   'LIVE SENSOR READINGS',
+    ptGas:      'GAS SENSORS',
+    advTitle:   '🤖 AI Field Advice',
+    chatHead:   '🌿 AI Farming Companion',
+    chatWelcome:'👋 Hi! I\'m your AI Farming Companion. Ask any farming question! 🌱',
+    chatPH:     'Ask me anything about your farm...',
+    conf:       'Confidence ',
+    dlIrr:      'Irrigate', dlPump: 'Pump', dlGas: 'Gas', dlStage: 'Stage',
+    tkMoist:    'Moisture Trend:', tkWater: 'Water:', tkAir: 'Air Quality:',
+    health:     { GOOD:'🌱 GOOD', MODERATE:'⚠️ MODERATE', POOR:'😢 POOR', CRITICAL:'💀 CRITICAL' },
+    advice:     {
+      GOOD:     '✅ Crop looks healthy. Keep monitoring.',
+      MODERATE: '⚠️ Crop needs attention. Check moisture & temperature.',
+      POOR:     '🔴 Crop is struggling. Irrigate and inspect field.',
+      CRITICAL: '💀 CRITICAL — Immediate action required!'
+    },
+    trend:      { stable:'Stable', rising:'Rising', falling:'Falling' },
+    tdsOk:      '✅ Safe',  tdsHigh:   '⚠️ High',
+    aqi:        { Excellent:'Excellent', Good:'Good', Moderate:'Moderate', Poor:'Poor' },
+    lblMoist:   '💧 Soil Moisture', lblTds: '🧂 Water TDS',
+    lblAir:     '🌡️ Air Temp',       lblHum: '💦 Humidity', lblSoil: '🌱 Soil Temp',
+    waBtn:      '📲 Send WhatsApp Alert',
+    langBtn:    '🇮🇳 TA',
+    ql: ['💧 Irrigate?','🧂 Water safe?','🌱 Health?','🌿 Fertilize?','☁️ Air quality?','⚙️ Pump status?'],
+    qq: ['Should I irrigate now?','Is water quality safe?','How is crop health?',
+         'Can I fertilize now?','Is air quality safe?','What is pump status?'],
+    weather: {}
+  },
+  ta: {
+    ptSensor:   'நேரடி உணரி அளவீடுகள்',
+    ptGas:      'வாயு உணரிகள்',
+    advTitle:   '🤖 AI வயல் ஆலோசனை',
+    chatHead:   '🌿 AI வேளாண் உதவியாளர்',
+    chatWelcome:'👋 வணக்கம்! நான் உங்கள் AI வேளாண் உதவியாளர். கேளுங்கள்! 🌱',
+    chatPH:     'உங்கள் வயலைப் பற்றி கேளுங்கள்...',
+    conf:       'நம்பகத்தன்மை ',
+    dlIrr:      'நீர்ப்பாசனம்', dlPump: 'பம்ப்', dlGas: 'வாயு', dlStage: 'நிலை',
+    tkMoist:    'ஈரப்பதம்:', tkWater: 'நீர்:', tkAir: 'காற்று தரம்:',
+    health:     { GOOD:'🌱 நல்லது', MODERATE:'⚠️ நடுத்தரம்', POOR:'😢 மோசம்', CRITICAL:'💀 அவசரம்' },
+    advice:     {
+      GOOD:     '✅ பயிர் ஆரோக்கியமாக உள்ளது. தொடர்ந்து கண்காணியுங்கள்.',
+      MODERATE: '⚠️ பயிருக்கு கவனிப்பு தேவை. ஈரப்பதம் & வெப்பம் சரிபாருங்கள்.',
+      POOR:     '🔴 பயிர் கஷ்டப்படுகிறது. நீர் பாய்ச்சி வயலை சோதியுங்கள்.',
+      CRITICAL: '💀 அவசரம் — உடனடி நடவடிக்கை தேவை!'
+    },
+    trend:      { stable:'நிலையான', rising:'உயர்கிறது', falling:'குறைகிறது' },
+    tdsOk:      '✅ பாதுகாப்பு',  tdsHigh:   '⚠️ அதிகம்',
+    aqi:        { Excellent:'மிகவும் நல்லது', Good:'நல்லது', Moderate:'நடுத்தரம்', Poor:'மோசம்' },
+    lblMoist:   '💧 மண் ஈரப்பதம்', lblTds: '🧂 நீர் TDS',
+    lblAir:     '🌡️ காற்று வெப்பம்', lblHum: '💦 ஈரப்பதம்', lblSoil: '🌱 மண் வெப்பம்',
+    waBtn:      '📲 வாட்ஸ்அப் எச்சரிக்கை அனுப்பு',
+    langBtn:    '🇬🇧 EN',
+    ql: ['💧 பாசனமா?','🧂 நீர் பாதுகாப்பா?','🌱 ஆரோக்கியம்?','🌿 உரமிடலாமா?','☁️ காற்று தரம்?','⚙️ பம்ப் நிலை?'],
+    qq: ['இப்போது நீர் பாய்ச்சலாமா?','நீர் தரம் பாதுகாப்பானதா?',
+         'பயிரின் ஆரோக்கியம் எப்படி?','இப்போது உரமிடலாமா?',
+         'காற்று தரம் பாதுகாப்பானதா?','பம்ப் நிலை என்ன?'],
+    weather: {
+      'Stable weather next 24h': '🌤 அடுத்த 24 மணி நேரம் நிலையான வானிலை',
+      'Light rain expected':     '🌦 இலேசான மழை எதிர்பார்க்கப்படுகிறது',
+      'Heavy rain':              '🌧 கனமழை வரும் — நீர்ப்பாசனம் தவிர்க்கவும்',
+      'Stable weather':          '🌤 நிலையான வானிலை',
+      'Weather normal':          '🌤 வானிலை சாதாரணம்',
+      'Forecast unavailable':    'வானிலை கணிப்பு இல்லை',
+      'Heat':                    '🌡️ வெப்பம்'
+    }
+  }
 };
 
-// Single source of truth for sensor values
-let currentSensors = Object.assign({}, SCENARIOS.normal);
+// ── applyLang — updates every labelled element ────────────────
+function applyLang() {
+  const S = L[currentLang];
+  setText('pt-sensor',    S.ptSensor);
+  setText('pt-gas',       S.ptGas);
+  setText('adviceTitle',  S.advTitle);
+  setText('chatHeadTitle',S.chatHead);
+  setText('chatWelcome',  S.chatWelcome);
+  const ci = gid('chatInput'); if (ci) ci.placeholder = S.chatPH;
+  setText('dlbl-irrigate',S.dlIrr);
+  setText('dlbl-pump',    S.dlPump);
+  setText('dlbl-gas',     S.dlGas);
+  setText('dlbl-stage',   S.dlStage);
+  setText('tk-moist',     S.tkMoist);
+  setText('tk-water',     S.tkWater);
+  setText('tk-air',       S.tkAir);
+  setText('lbl-moist',    S.lblMoist);
+  setText('lbl-tds',      S.lblTds);
+  setText('lbl-airtemp',  S.lblAir);
+  setText('lbl-hum',      S.lblHum);
+  setText('lbl-soiltemp', S.lblSoil);
+  const wa = gid('waBtn'); if (wa) wa.textContent = S.waBtn;
+  const lb = gid('langToggleBtn'); if (lb) lb.textContent = S.langBtn;
+  // Quick prompts
+  const qbtns = document.querySelectorAll('.quick-grid button');
+  S.ql.forEach((lbl, i) => { if (qbtns[i]) qbtns[i].textContent = lbl; });
+  // Re-render dynamic values if result available
+  if (lastResult) renderLangValues(lastResult);
+}
 
-function gid(x)  { return document.getElementById(x); }
-function setBar(id, p) { const el=gid(id); if(el) el.style.width = Math.max(4,Math.min(100,p))+'%'; }
-function setText(id, t) { const el=gid(id); if(el) el.textContent = t; }
+function renderLangValues(d) {
+  const S  = L[currentLang];
+  const hs = d.health_status || 'GOOD';
+  setText('healthTag',  S.health[hs] || hs);
+  setText('adviceText', S.advice[hs] || '');
+  setText('confText',   S.conf + (d.confidence_pct || '--') + '%');
+  setText('t-moist',    S.trend[d.trend_moisture] || d.trend_moisture || '--');
+  setText('t-tds',      d.tds_safe ? S.tdsOk : S.tdsHigh);
+  const aqiKey = d.field_aqi_label || 'Good';
+  setText('t-aqi', S.aqi[aqiKey] || aqiKey);
+  // Weather note
+  if (d.weather_note) {
+    let wt = d.weather_note;
+    if (currentLang === 'ta') {
+      for (const [en, ta] of Object.entries(S.weather)) {
+        if (wt.includes(en)) { wt = ta; break; }
+      }
+    }
+    setText('weatherNote', wt);
+  }
+}
 
-// ── Clock ───────────────────────────────────────────────────────
-function clock() { if(gid('clock')) gid('clock').textContent = new Date().toLocaleTimeString(); }
-setInterval(clock, 1000); clock();
+function toggleLang() {
+  currentLang = (currentLang === 'ta') ? 'en' : 'ta';
+  applyLang();
+}
 
-// ── Mode Switch ─────────────────────────────────────────────────
+// ── Clock ──────────────────────────────────────────────────────
+setInterval(() => { setText('clock', new Date().toLocaleTimeString('en-IN')); }, 1000);
+
+// ── Crop tabs ─────────────────────────────────────────────────
+async function loadCrops() {
+  try {
+    const data = await fetch('/crops').then(r => r.json());
+    Object.assign(cropStages, data);
+    const tabs = gid('crop-tabs');
+    if (!tabs) return;
+    tabs.innerHTML = '';
+    const crops = Object.keys(data);
+    crops.forEach(c => {
+      const btn = document.createElement('button');
+      btn.textContent = c.charAt(0).toUpperCase() + c.slice(1);
+      btn.className = 'crop-tab' + (c === currentCrop ? ' active' : '');
+      btn.onclick = () => { currentCrop = c; fillStages(); runPredict();
+        tabs.querySelectorAll('.crop-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active'); };
+      tabs.appendChild(btn);
+    });
+    fillStages();
+  } catch(e) { console.warn('loadCrops:', e); }
+}
+
+function fillStages() {
+  const s = gid('stageSel'); if (!s) return;
+  s.innerHTML = '';
+  const crop = cropStages[currentCrop];
+  if (!crop) return;
+  const stages = Array.isArray(crop) ? crop : (crop.stages || []);
+  stages.forEach(st => {
+    const o = document.createElement('option');
+    o.value = st; o.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+    s.appendChild(o);
+  });
+}
+
+// ── Simulate scenarios ────────────────────────────────────────
+const SCENARIOS = {
+  normal:   { soil_moisture:72, tds_ppm:350, air_temp_c:28, soil_temp_c:24, humidity_pct:65, mq135_ammonia:50,  mq4_methane:200, mq7_co:10 },
+  dry:      { soil_moisture:30, tds_ppm:380, air_temp_c:34, soil_temp_c:30, humidity_pct:40, mq135_ammonia:60,  mq4_methane:210, mq7_co:12 },
+  saline:   { soil_moisture:55, tds_ppm:1400,air_temp_c:30, soil_temp_c:26, humidity_pct:60, mq135_ammonia:55,  mq4_methane:200, mq7_co:10 },
+  gas:      { soil_moisture:68, tds_ppm:360, air_temp_c:29, soil_temp_c:25, humidity_pct:70, mq135_ammonia:320, mq4_methane:1200,mq7_co:150},
+  heat:     { soil_moisture:50, tds_ppm:400, air_temp_c:42, soil_temp_c:38, humidity_pct:30, mq135_ammonia:70,  mq4_methane:220, mq7_co:15 },
+  critical: { soil_moisture:20, tds_ppm:1600,air_temp_c:44, soil_temp_c:40, humidity_pct:20, mq135_ammonia:350, mq4_methane:1300,mq7_co:180}
+};
+let activeScenario = 'normal';
+
+function setScenario(name) {
+  activeScenario = name;
+  currentSensors = { ...SCENARIOS[name] };
+  document.querySelectorAll('.scenario-chips button').forEach(b => {
+    b.classList.toggle('active-chip', b.id === 'sc-' + name);
+  });
+  renderSensors(currentSensors);
+  runPredict();
+}
+
+// ── Sensor display ────────────────────────────────────────────
+function renderSensors(s) {
+  const set = (id, v, unit) => setText(id, v !== undefined ? (Number(v).toFixed(1) + unit) : '--');
+  set('v-moist',    s.soil_moisture,  '%');
+  set('v-tds',      s.tds_ppm,        ' ppm');
+  set('v-air',      s.air_temp_c,     '°C');
+  set('v-hum',      s.humidity_pct,   '%');
+  set('v-soiltemp', s.soil_temp_c,    '°C');
+  set('v-mq135',    s.mq135_ammonia,  ' ppm');
+  set('v-mq4',      s.mq4_methane,    ' ppm');
+  set('v-mq7',      s.mq7_co,         ' ppm');
+  // Sensor bar widths
+  const bars = { 'b-moist':s.soil_moisture, 'b-tds':Math.min(100,s.tds_ppm/20),
+    'b-air':Math.min(100,(s.air_temp_c/50)*100), 'b-hum':s.humidity_pct,
+    'b-soiltemp':Math.min(100,(s.soil_temp_c/50)*100) };
+  for (const [id, pct] of Object.entries(bars)) {
+    const el = gid(id); if (el) el.style.width = Math.max(2, pct) + '%';
+  }
+}
+
+// ── Predict ───────────────────────────────────────────────────
+async function runPredict() {
+  const stageEl = gid('stageSel');
+  try {
+    const d = await fetch('/predict', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ crop: currentCrop,
+        stage: stageEl ? stageEl.value : 'germination',
+        sensors: currentSensors })
+    }).then(r => r.json());
+
+    lastResult = d;
+
+    // Score + gauge
+    setText('scoreText', d.health_score);
+    const S = L[currentLang];
+    const hs = d.health_status || 'GOOD';
+    setText('healthTag',  S.health[hs] || hs);
+    setText('adviceText', S.advice[hs] || '');
+    setText('confText',   S.conf + (d.confidence_pct || '--') + '%');
+
+    // Gauge animation
+    const fill   = gid('gaugeFill');
+    const needle = gid('gaugeNeedle');
+    if (fill)   fill.style.width   = d.health_score + '%';
+    if (needle) needle.style.left  = d.health_score + '%';
+
+    // Crop face
+    animateFace(hs);
+
+    // Decisions
+    setText('d-irrigate', d.irrigate_now  ? '✅ YES' : 'NO');
+    setText('d-pump',     d.pump_locked   ? '🔒 LOCKED' : (d.pump_on ? '🟢 ON' : '⚪ OFF'));
+    setText('d-gas',      d.gas_alert     ? '🚨 ALERT'  : '✅ CLEAR');
+    setText('d-stage',    stageEl ? stageEl.value : '--');
+
+    // Trend / TDS / AQI
+    setText('t-moist',    S.trend[d.trend_moisture] || d.trend_moisture || '--');
+    setText('t-tds',      d.tds_safe ? S.tdsOk : S.tdsHigh);
+    setText('t-aqi',      S.aqi[d.field_aqi_label] || d.field_aqi_label || '--');
+
+    // Weather note
+    if (d.weather_note) {
+      let wt = d.weather_note;
+      if (currentLang === 'ta') {
+        for (const [en, ta] of Object.entries(S.weather)) {
+          if (wt.includes(en)) { wt = ta; break; }
+        }
+      }
+      setText('weatherNote', wt);
+    }
+
+    // WhatsApp alert button pulse
+    const waBtn = gid('waBtn');
+    if (waBtn) {
+      if (d.gas_alert || hs === 'CRITICAL' || hs === 'POOR') {
+        waBtn.classList.add('alert-active');
+      } else {
+        waBtn.classList.remove('alert-active');
+      }
+    }
+
+  } catch(e) {
+    console.error('Predict error:', e);
+    setText('adviceText', 'Server starting up — retrying...');
+    setTimeout(runPredict, 3000);
+  }
+}
+
+// ── Crop face animation ───────────────────────────────────────
+function animateFace(s) {
+  const face   = gid('cropFace');
+  const eyeL   = gid('eye-l');
+  const eyeR   = gid('eye-r');
+  const mouth  = gid('mouth');
+  const sparks = gid('sparkles');
+  const colors = { GOOD:'#2ecc71', MODERATE:'#f39c12', POOR:'#e67e22', CRITICAL:'#e74c3c' };
+  const c = colors[s] || '#2ecc71';
+  if (face) face.className = 'crop-face ' + s.toLowerCase();
+  if (eyeL) eyeL.setAttribute('fill', c);
+  if (eyeR) eyeR.setAttribute('fill', c);
+  if (mouth) {
+    const paths = { GOOD:'M33 43 Q40 50 47 43', MODERATE:'M33 44 Q40 46 47 44',
+                    POOR:'M33 47 Q40 44 47 47',  CRITICAL:'M32 48 Q40 42 48 48' };
+    mouth.setAttribute('d', paths[s] || paths.GOOD);
+    mouth.setAttribute('stroke', c);
+  }
+  if (sparks) sparks.style.display = s === 'GOOD' ? '' : 'none';
+}
+
+// ── Mode switching ────────────────────────────────────────────
 function setMode(mode) {
   MODE = mode;
   const liveBtn = gid('btn-live'), simBtn = gid('btn-sim');
   const simBar  = gid('simbar'),   modeTag = gid('modeTag');
-
+  stopLive();
   if (MODE === 'live') {
-    if(liveBtn) liveBtn.classList.add('active-mode');
-    if(simBtn)  simBtn.classList.remove('active-mode');
-    if(simBar)  simBar.style.opacity = '0.4';
-    if(modeTag){ modeTag.textContent = '📡 LIVE'; modeTag.style.background='#1a4d1a'; }
-    startLivePoll();
+    if (liveBtn) liveBtn.classList.add('active-mode');
+    if (simBtn)  simBtn.classList.remove('active-mode');
+    if (simBar)  simBar.style.opacity = '0.4';
+    if (modeTag) { modeTag.textContent = '📡 LIVE'; modeTag.style.background = '#c0392b'; }
+    fetchLive();
+    liveInterval = setInterval(fetchLive, 2000);
   } else {
-    if(simBtn)  simBtn.classList.add('active-mode');
-    if(liveBtn) liveBtn.classList.remove('active-mode');
-    if(simBar)  simBar.style.opacity = '1';
-    if(modeTag){ modeTag.textContent = '🎛️ SIM'; modeTag.style.background='#3a2a00'; }
-    stopLivePoll();
-    setScenario('normal');
+    if (simBtn)  simBtn.classList.add('active-mode');
+    if (liveBtn) liveBtn.classList.remove('active-mode');
+    if (simBar)  simBar.style.opacity = '1';
+    if (modeTag) { modeTag.textContent = '🎛️ SIM'; modeTag.style.background = '#27ae60'; }
+    setScenario(activeScenario || 'normal');
   }
 }
 
-// ── Live Poll ───────────────────────────────────────────────────
-function startLivePoll() {
-  stopLivePoll();
-  fetchLive();
-  liveInterval = setInterval(fetchLive, 5000);
-}
-function stopLivePoll() {
+function stopLive() {
   if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
 }
 
 async function fetchLive() {
   try {
-    const r = await fetch('/live');
-    const d = await r.json();
-    const tag = gid('modeTag');
-    if (d.status === 'no_data') {
-      if(tag){ tag.textContent = '📡 LIVE — Waiting for ESP32...'; tag.style.background='#4d2a00'; }
-      return;
-    }
-    // Merge live data into currentSensors
-    Object.keys(d).forEach(k => { if(k !== 'status') currentSensors[k] = Number(d[k]); });
+    const d = await fetch('/live').then(r => r.json());
+    if (d.status === 'no_data') return;
+    currentSensors = { ...currentSensors, ...d };
     renderSensors(currentSensors);
-    await runPredict();
-    if(tag){ tag.textContent = '📡 LIVE ✅'; tag.style.background='#1a4d1a'; }
-  } catch(e) {
-    const tag = gid('modeTag');
-    if(tag){ tag.textContent = '📡 LIVE — Error'; tag.style.background='#4d0000'; }
-  }
+    runPredict();
+  } catch(e) { console.warn('fetchLive:', e); }
 }
 
-// ── Render sensor bars ──────────────────────────────────────────
-function renderSensors(d) {
-  setText('v-moist',    d.soil_moisture  + '%');
-  setText('v-tds',      d.tds_ppm        + ' ppm');
-  setText('v-air',      d.air_temp_c     + '°C');
-  setText('v-hum',      d.humidity_pct   + '%');
-  setText('v-soiltemp', d.soil_temp_c    + '°C');
-  setText('v-mq135',    d.mq135_ammonia  + ' ppm');
-  setText('v-mq4',      d.mq4_methane    + ' ppm');
-  setText('v-mq7',      d.mq7_co         + ' ppm');
-  setBar('b-moist',    d.soil_moisture);
-  setBar('b-tds',      Math.min(100, d.tds_ppm / 20));
-  setBar('b-air',      Math.min(100, d.air_temp_c * 2));
-  setBar('b-hum',      d.humidity_pct);
-  setBar('b-soiltemp', Math.min(100, d.soil_temp_c * 2));
-}
-
-// ── Scenario setter ─────────────────────────────────────────────
-function setScenario(name) {
-  currentSensors = Object.assign({}, SCENARIOS[name]);
-  renderSensors(currentSensors);
-  runPredict();
-  // Highlight active scenario button
-  document.querySelectorAll('.scenario-chips button').forEach(b => b.classList.remove('active-scene'));
-  const sc = gid('sc-' + name);
-  if (sc) sc.classList.add('active-scene');
-}
-
-// ── Run Predict ─────────────────────────────────────────────────
-async function runPredict() {
-  const stageEl = gid('stageSel');
-  if (!stageEl) return;
-  try {
-    const r = await fetch('/predict', {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ crop: currentCrop, stage: stageEl.value, sensors: currentSensors })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Predict failed');
-
-    const healthLabels = {
-      'GOOD':     '🌱 HEALTHY',
-      'MODERATE': '⚠️ MODERATE',
-      'POOR':     '🔴 POOR',
-      'CRITICAL': '💀 CRITICAL'
-    };
-    const adviceMap = {
-      'GOOD':     '✅ Crop looks healthy. Keep monitoring.',
-      'MODERATE': '⚠️ Crop needs attention. Check moisture & temperature.',
-      'POOR':     '🔴 Crop is struggling. Irrigate and inspect field.',
-      'CRITICAL': '💀 CRITICAL — Immediate action required!'
-    };
-
-    // Update score
-    setText('scoreText',  d.health_score);
-    setText('adviceText', adviceMap[d.health_status] || 'Analyzing...');
-
-    // Animate half-arc gauge
-    const fill   = gid('gaugeFill');
-    const needle = gid('gaugeNeedle');
-    const pct    = Math.max(0, Math.min(100, d.health_score));
-    const color  = pct >= 75 ? '#2ecc71' : pct >= 50 ? '#f1c40f' : pct >= 25 ? '#e67e22' : '#e74c3c';
-    const arcLen = 188;
-    if (fill) {
-      fill.style.strokeDashoffset = arcLen - (pct / 100) * arcLen;
-      fill.style.stroke = color;
-    }
-    // Move needle dot along the arc path (semicircle: cx=70, cy=75, r=60)
-    if (needle) {
-      const angle = Math.PI - (pct / 100) * Math.PI; // 180° to 0°
-      const nx = 70 + 60 * Math.cos(angle);
-      const ny = 75 - 60 * Math.sin(angle);
-      needle.setAttribute('cx', nx.toFixed(1));
-      needle.setAttribute('cy', ny.toFixed(1));
-      needle.setAttribute('fill', color);
-    }
-
-    // Health tag with color class
-    const tag = gid('healthTag');
-    if (tag) {
-      tag.textContent = healthLabels[d.health_status] || d.health_status;
-      tag.className   = 'health-tag';
-      if      (d.health_status === 'MODERATE') tag.classList.add('moderate');
-      else if (d.health_status === 'POOR')     tag.classList.add('poor');
-      else if (d.health_status === 'CRITICAL') tag.classList.add('critical');
-    }
-
-    // Animated crop face morph
-    const face   = gid('cropFace');
-    const eyeL   = gid('eye-l');
-    const eyeR   = gid('eye-r');
-    const mouth  = gid('mouth');
-    const sparks = gid('sparkles');
-    const svg    = gid('cropSvg');
-
-    if (face) {
-      face.className = 'crop-face';
-      const s = d.health_status;
-
-      // Face class for animation
-      face.classList.add(
-        s === 'GOOD'     ? 'face-good'     :
-        s === 'MODERATE' ? 'face-moderate' :
-        s === 'POOR'     ? 'face-poor'     : 'face-critical'
-      );
-
-      // Eye color
-      const eyeColor = s==='GOOD' ? '#2ecc71' : s==='MODERATE' ? '#f1c40f' : s==='POOR' ? '#e67e22' : '#e74c3c';
-      if(eyeL) eyeL.setAttribute('fill', eyeColor);
-      if(eyeR) eyeR.setAttribute('fill', eyeColor);
-
-      // Stem/head color
-      svg?.querySelectorAll('line,ellipse:not(#eye-l):not(#eye-r)').forEach(el => {
-        if(el.tagName==='line'||el.getAttribute('stroke'))
-          el.setAttribute('stroke', eyeColor);
-      });
-
-      // Mouth shape
-      if (mouth) {
-        if      (s === 'GOOD')     mouth.setAttribute('d','M33 43 Q40 50 47 43'); // big smile
-        else if (s === 'MODERATE') mouth.setAttribute('d','M33 44 Q40 46 47 44'); // slight smile
-        else if (s === 'POOR')     mouth.setAttribute('d','M33 47 Q40 44 47 47'); // frown
-        else                       mouth.setAttribute('d','M32 48 Q40 42 48 48'); // deep frown
-        mouth.setAttribute('stroke', eyeColor);
-      }
-
-      // Eyes: X eyes for critical
-      if (eyeL && eyeR) {
-        if (s === 'CRITICAL') {
-          eyeL.setAttribute('rx','3'); eyeL.setAttribute('ry','1.2');
-          eyeR.setAttribute('rx','3'); eyeR.setAttribute('ry','1.2');
-        } else {
-          eyeL.setAttribute('r','2.8'); eyeR.setAttribute('r','2.8');
-        }
-      }
-      // Hide sparkles if not good
-      if (sparks) sparks.style.display = s==='GOOD' ? '' : 'none';
-    }
-    setText('d-irrigate', d.irrigate_now ? '✅ YES' : 'NO');
-    setText('d-pump',     d.pump_locked  ? '🔒 LOCKED' : (d.pump_on ? '🟢 ON' : 'OFF'));
-    setText('d-gas',   d.gas_alert ? '🚨 ALERT' : '✅ CLEAR');
-    setText('d-stage', stageEl.value);
-    setText('t-moist', d.trend_moisture || 'stable');
-    setText('t-tds',   d.tds_safe ? '✅ Safe' : '⚠️ High');
-    setText('t-aqi',   d.field_aqi_label || '--');
-    if(gid('confText')) setText('confText', 'Confidence ' + d.confidence_pct + '%');
-    // WhatsApp alert button — activate on CRITICAL / gas alert
-    const waBtn = gid('waBtn');
-    if (waBtn) {
-      if (d.gas_alert || d.health_status === 'CRITICAL' || d.health_status === 'POOR') {
-        waBtn.classList.add('alert-active');
-        waBtn.title = 'Alert condition detected — click to notify farmer';
-      } else {
-        waBtn.classList.remove('alert-active');
-      }
-    }
-    // Weather note in advice box
-    if (d.weather_note && gid('weatherNote')) setText('weatherNote', '🌦 ' + d.weather_note);
-  } catch(e) {
-    console.error('Predict error:', e);
-    setText('adviceText', 'Prediction error — server may be starting up. Retrying...');
-    // Auto retry after 3s
-    setTimeout(runPredict, 3000);
-  }
-}
-
-// ── Weather ─────────────────────────────────────────────────────
+// ── Weather ───────────────────────────────────────────────────
 async function loadWeather() {
   try {
     const d = await fetch('/weather').then(r => r.json());
-    setText('weatherPill',  '☁️ ' + d.temp + '°C');
-    setText('weatherStrip', `🌥 ${d.city}: ${d.temp}°C · Humidity ${d.humidity}% · Rain ${d.rain}mm · Wind ${d.wind}m/s`);
-  } catch {}
-}
-
-// ── Status ──────────────────────────────────────────────────────
-async function loadStatus() {
-  try {
-    const d = await fetch('/status').then(r => r.json());
-    setText('aiBadge',    d.gemini_ready ? '🤖 Gemini ON' : '🤖 AI');
-    setText('chatStatus', d.gemini_ready ? 'ONLINE' : 'OFFLINE');
-    const dot = gid('chatDot');
-    if (dot) { dot.className = d.gemini_ready ? 'dot online' : 'dot'; }
-  } catch {}
-}
-
-// ── FillStages — BUG FIX: handle both array and object stages ───
-function fillStages() {
-  const s = gid('stageSel');
-  if (!s) return;
-  s.innerHTML = '';
-  const crop = cropStages[currentCrop];
-  let stages;
-  if (!crop) {
-    stages = ['germination'];
-  } else if (Array.isArray(crop.stages)) {
-    stages = crop.stages;                   // ✅ array → use directly
-  } else if (crop.stages && typeof crop.stages === 'object') {
-    stages = Object.keys(crop.stages);      // ✅ object → get keys
-  } else {
-    stages = ['germination'];
-  }
-  stages.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v;
-    o.textContent = v[0].toUpperCase() + v.slice(1).replace(/_/g,' ');
-    s.appendChild(o);
-  });
-  runPredict();
-}
-
-// ── Crop tabs ───────────────────────────────────────────────────
-async function boot() {
-  try {
-    const c = await fetch('/crops').then(r => r.json());
-    cropStages = c;
-    const tabs = gid('crop-tabs');
-    if (tabs) {
-      Object.keys(c).forEach((k, i) => {
-        const b = document.createElement('button');
-        b.textContent = '🌾 ' + k[0].toUpperCase() + k.slice(1);
-        b.className   = 'crop-btn' + (i === 0 ? ' active' : '');
-        b.onclick = () => {
-          document.querySelectorAll('.crop-btn').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
-          currentCrop = k;
-          fillStages();
-        };
-        tabs.appendChild(b);
-      });
+    const pill = gid('weatherPill');
+    if (pill && d.enabled) {
+      pill.textContent = `${d.city} ${d.temp}°C 💧${d.humidity}%`;
     }
-  } catch(e) {
-    console.error('Failed to load crops:', e);
-    cropStages = { rice: { stages: ['germination','tillering','flowering','harvest'], moist_min:60, moist_opt:75, tds_max:800 } };
-  }
-  fillStages();
-  await loadStatus();
-  await loadWeather();
-  await loadForecast();
-  setInterval(loadWeather,   60000);
-  setInterval(loadForecast,  1800000);  // refresh forecast every 30 min
-  setMode('sim');
+  } catch {}
 }
 
-// ── Chat ─────────────────────────────────────────────────────────
-function addMsg(cls, txt) {
-  const box = gid('chatBox');
-  if (!box) return;
-  const div = document.createElement('div');
-  div.className = cls; div.textContent = txt;
-  box.appendChild(div); box.scrollTop = box.scrollHeight;
-}
-function quickAsk(q) { const i=gid('chatInput'); if(i){ i.value=q; sendChat(); } }
-
-async function sendChat() {
-  const input = gid('chatInput');
-  if (!input) return;
-  const msg = input.value.trim();
-  if (!msg) return;
-  addMsg('user', msg); input.value = '';
-  try {
-    const stageEl = gid('stageSel');
-    const r = await fetch('/chat', {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        message: msg, crop: currentCrop,
-        stage:   stageEl ? stageEl.value : 'germination',
-        sensors: currentSensors
-      })
-    });
-    const d = await r.json();
-    addMsg('bot', d.reply || 'No reply');
-  } catch { addMsg('bot', 'Connection error — server may be restarting.'); }
-}
-
-const stageEl = gid('stageSel');
-if (stageEl) stageEl.addEventListener('change', runPredict);
-window.addEventListener('load', boot);
-
-// ── WhatsApp Alert ──────────────────────────────────────────
-function sendWhatsApp() {
-  const stageEl = gid('stageSel');
-  const score   = gid('scoreText')  ? gid('scoreText').textContent  : '--';
-  const status  = gid('healthTag')  ? gid('healthTag').textContent  : '--';
-  const gas     = gid('d-gas')      ? gid('d-gas').textContent      : '--';
-  const pump    = gid('d-pump')     ? gid('d-pump').textContent     : '--';
-  const stage   = stageEl           ? stageEl.value                 : '--';
-  const moist   = gid('v-moist')    ? gid('v-moist').textContent    : '--';
-  const temp    = gid('v-air')      ? gid('v-air').textContent      : '--';
-
-  const msg =
-    `🚨 *EcoSense Farm Alert*\n` +
-    `Crop: ${currentCrop.toUpperCase()} (${stage})\n` +
-    `Health: ${score}/100 — ${status}\n` +
-    `Moisture: ${moist} | Temp: ${temp}\n` +
-    `Gas: ${gas} | Pump: ${pump}\n` +
-    `⚠️ Immediate attention required!\n` +
-    `Dashboard: https://ecosense-fntj.onrender.com`;
-
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-}
-
-// ── Forecast Strip ──────────────────────────────────────────
+// ── Forecast strip ────────────────────────────────────────────
 async function loadForecast() {
   try {
     const d = await fetch('/forecast').then(r => r.json());
-    const strip = gid('forecastStrip');
-    if (!strip || !d.enabled || !d.next24h.length) {
-      if (strip) strip.innerHTML = '<span style="font-size:11px;color:#4a6e4a;padding:4px 0;">Forecast unavailable</span>';
+    const strip = gid('forecastStrip'); if (!strip) return;
+    if (!d.enabled || !d.next24h || !d.next24h.length) {
+      strip.innerHTML = '<span style="opacity:.5;font-size:11px">Forecast unavailable</span>';
       return;
     }
-    const icons = {
-      'Rain':'🌧','Drizzle':'🌦','Thunderstorm':'⛈️',
-      'Clouds':'☁️','Clear':'☀️','Mist':'🌫️','Haze':'🌫️','Snow':'❄️'
-    };
-    strip.innerHTML = d.next24h.map(s => `
-      <div style="min-width:62px;background:#162118;border:1px solid #1e3320;
-                  border-radius:8px;padding:5px 6px;text-align:center;flex-shrink:0;">
-        <div style="font-size:10px;color:#7a9e7a">${s.time}</div>
-        <div style="font-size:16px;margin:2px 0">${icons[s.desc]||'🌤'}</div>
-        <div style="font-size:11px;font-weight:700;color:#e0f0e0">${s.temp}°</div>
-        ${s.rain > 0 ? `<div style="font-size:10px;color:#4fc3f7">💧${s.rain}mm</div>` : ''}
-      </div>
-    `).join('');
+    strip.innerHTML = d.next24h.map(s =>
+      `<div class="fc-slot"><div class="fc-time">${s.time}</div>
+       <div class="fc-icon">${s.rain>1?'🌧':s.temp>36?'🌡️':'☀️'}</div>
+       <div class="fc-temp">${s.temp}°</div>
+       <div class="fc-rain">${s.rain>0?s.rain+'mm':''}</div></div>`
+    ).join('');
+  } catch {}
+}
 
-    // Update forecast summary note
-    if (gid('weatherNote')) {
-      setText('weatherNote', d.summary);
+// ── Status badge ─────────────────────────────────────────────
+async function loadStatus() {
+  try {
+    const d = await fetch('/status').then(r => r.json());
+    const badge = gid('aiBadge');
+    if (badge) {
+      badge.textContent = d.gemini_ready ? '✨ Gemini' : '🔧 Offline';
+      badge.style.background = d.gemini_ready ? '#8e44ad' : '#7f8c8d';
     }
+  } catch {}
+}
+
+// ── Chat ──────────────────────────────────────────────────────
+function quickAsk(i) {
+  const q = L[currentLang].qq[i];
+  if (!q) return;
+  const inp = gid('chatInput');
+  if (inp) inp.value = q;
+  sendChat();
+}
+
+async function sendChat() {
+  const inp  = gid('chatInput');
+  const box  = gid('chatBox');
+  if (!inp || !box) return;
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+
+  // User bubble
+  const userDiv = document.createElement('div');
+  userDiv.className = 'chat-msg user-msg';
+  userDiv.textContent = msg;
+  box.appendChild(userDiv);
+  box.scrollTop = box.scrollHeight;
+
+  // Typing indicator
+  const dot = document.createElement('div');
+  dot.className = 'chat-msg bot-msg typing';
+  dot.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+  box.appendChild(dot);
+  box.scrollTop = box.scrollHeight;
+
+  try {
+    const stageEl = gid('stageSel');
+    const r = await fetch('/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: msg, crop: currentCrop,
+        stage:   stageEl ? stageEl.value : 'germination',
+        sensors: currentSensors,
+        lang:    currentLang
+      })
+    });
+    const d = await r.json();
+    dot.remove();
+    const botDiv = document.createElement('div');
+    botDiv.className = 'chat-msg bot-msg';
+    botDiv.textContent = d.reply || '...';
+    box.appendChild(botDiv);
+    box.scrollTop = box.scrollHeight;
   } catch(e) {
-    console.error('Forecast error:', e);
+    dot.remove();
+    const errDiv = document.createElement('div');
+    errDiv.className = 'chat-msg bot-msg';
+    errDiv.textContent = currentLang === 'ta'
+      ? 'பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.'
+      : 'Error — please try again.';
+    box.appendChild(errDiv);
+    box.scrollTop = box.scrollHeight;
   }
 }
+
+// ── Enter key for chat ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = gid('chatInput');
+  if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+});
+
+// ── WhatsApp alert ────────────────────────────────────────────
+function sendWhatsApp() {
+  if (!lastResult) return;
+  const hs  = lastResult.health_status;
+  const sc  = lastResult.health_score;
+  const msg = currentLang === 'ta'
+    ? `EcoSense எச்சரிக்கை!\nபயிர் ஆரோக்கியம்: ${sc}/100 (${hs})\nமண் ஈரப்பதம்: ${currentSensors.soil_moisture || '--'}%\n${lastResult.gas_alert ? '🚨 வாயு எச்சரிக்கை!' : ''}`
+    : `EcoSense Alert!\nCrop Health: ${sc}/100 (${hs})\nSoil Moisture: ${currentSensors.soil_moisture || '--'}%\n${lastResult.gas_alert ? '🚨 Gas Alert!' : ''}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+async function boot() {
+  await loadCrops();
+  await loadStatus();
+  await loadWeather();
+  await loadForecast();
+  applyLang();
+  setMode('sim');
+  setScenario('normal');
+  setInterval(loadWeather,  60000);
+  setInterval(loadForecast, 300000);
+  setInterval(loadStatus,   30000);
+}
+
+window.addEventListener('load', boot);
