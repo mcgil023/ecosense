@@ -119,11 +119,42 @@ def predict_r():
 def weather_r(): return jsonify(get_weather())
 @app.route("/forecast")
 def forecast_r(): return jsonify(get_forecast())
+
+# ── SSE push for instant ESP32→browser ───────────────────────
+from flask import Response
+from queue import Queue, Empty
+import threading as _th
+_sse_q    = []
+_sse_lock = _th.Lock()
+
+@app.route("/stream")
+def stream_r():
+    def gen():
+        q = Queue(maxsize=5)
+        with _sse_lock: _sse_q.append(q)
+        try:
+            while True:
+                try:    yield f"data: {q.get(timeout=20)}\n\n"
+                except Empty: yield "data: {}\n\n"
+        finally:
+            with _sse_lock:
+                if q in _sse_q: _sse_q.remove(q)
+    return Response(gen(), mimetype="text/event-stream",
+        headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
+
 @app.route("/esp32",methods=["POST"])
 @app.route("/data",methods=["POST"])
 def esp32_r():
     global esp32_data
+    import json as _j
     raw=request.json or {}; esp32_data=raw.get("sensors",raw)
+    payload = _j.dumps(esp32_data)
+    with _sse_lock:
+        dead=[]
+        for q in _sse_q:
+            try: q.put_nowait(payload)
+            except: dead.append(q)
+        for q in dead: _sse_q.remove(q)
     return jsonify({"status":"ok"})
 @app.route("/live")
 def live_r(): return jsonify(esp32_data if esp32_data else {"status":"no_data"})

@@ -230,10 +230,14 @@ async function runPredict() {
     setText('adviceText', S.advice[hs]);
     setText('confText',   S.conf + (d.confidence_pct||'--') + '%');
 
-    // Gauge
-    const fill = gid('gaugeFill'), needle = gid('gaugeNeedle');
-    if (fill)   fill.style.width  = d.health_score + '%';
-    if (needle) needle.style.left = d.health_score + '%';
+    // SVG arc gauge — stroke-dasharray + rotate transform
+    const fill   = gid('gaugeFill');
+    const needle = gid('gaugeNeedle');
+    const score  = d.health_score || 0;
+    const ARC    = 173;                             // π × r (55) ≈ 173
+    if (fill)   fill.setAttribute('stroke-dasharray', `${(score/100)*ARC} ${ARC}`);
+    if (needle) needle.setAttribute('transform',
+      `rotate(${-90 + (score/100)*180}, 60, 65)`); // -90° → +90°
 
     // Face animation
     const colors = {GOOD:'#2ecc71',MODERATE:'#f39c12',POOR:'#e67e22',CRITICAL:'#e74c3c'};
@@ -369,6 +373,36 @@ async function loadForecast() {
     ).join('');
   } catch {}
 }
+
+// ── ESP32 connection status ───────────────────────────────────
+let _esp32LastSeen = 0;
+function updateEsp32Badge(connected) {
+  const b = gid('esp32Status'); if (!b) return;
+  if (connected) {
+    b.textContent = '🟢 ESP32 Online';
+    b.className   = 'esp32-badge esp32-on';
+    _esp32LastSeen = Date.now();
+  } else {
+    const secs = Math.round((Date.now()-_esp32LastSeen)/1000);
+    b.textContent = secs > 3600
+      ? '🔴 ESP32 Offline'
+      : `🔴 ESP32 Offline (${secs}s ago)`;
+    b.className   = 'esp32-badge esp32-off';
+  }
+}
+// Wrap fetchLive to track ESP32 presence
+const _origFetchLive = fetchLive;
+async function fetchLive() {
+  try {
+    const d = await fetch('/live').then(r => r.json());
+    if (d.status === 'no_data') { updateEsp32Badge(false); return; }
+    updateEsp32Badge(true);
+    currentSensors = {...currentSensors, ...d};
+    renderSensors(currentSensors);
+    runPredict();
+  } catch(e) { updateEsp32Badge(false); console.warn('fetchLive:', e); }
+}
+setInterval(() => { if (MODE==='live') updateEsp32Badge(Date.now()-_esp32LastSeen < 10000); }, 5000);
 
 async function loadStatus() {
   try {

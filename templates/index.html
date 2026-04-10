@@ -1,19 +1,27 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EcoSense</title><link rel="stylesheet" href="/static/style.css"></head><body>
+
 <header class="topbar">
-  <div class="logo-wrap"><span class="logo-icon">&#127807;</span><span class="logo-text">EcoSense</span><span class="logo-sub">Smart Crop Monitor</span></div>
+  <div class="logo-wrap">
+    <span class="logo-icon">&#127807;</span>
+    <span class="logo-text">EcoSense</span>
+    <span class="logo-sub">Smart Crop Monitor</span>
+  </div>
   <div class="topbar-right">
-    <span id="modeTag" class="mode-tag">&#128225; LIVE</span>
-    <button id="langToggleBtn" onclick="toggleUILang()" style="background:#162118;color:#2ecc71;border:1px solid #2ecc71;border-radius:14px;padding:3px 12px;font-size:11px;font-weight:700;cursor:pointer;">&#127470;&#127475; TA</button>
+    <span id="esp32Status" class="esp32-badge esp32-off">&#128308; ESP32 Offline</span>
+    <span id="modeTag" class="mode-tag">&#127901;&#65039; SIM</span>
+    <button id="langToggleBtn" onclick="toggleUILang()" class="lang-btn">&#127470;&#127475; TA</button>
     <span class="clock" id="clock">--:--:--</span>
   </div>
 </header>
+
 <div class="mode-bar">
-  <button id="btn-live" class="mode-btn active-mode" onclick="setMode('live')">&#128225; Live</button>
-  <button id="btn-sim"  class="mode-btn"             onclick="setMode('sim')">&#127901;&#65039; Simulate</button>
+  <button id="btn-live" class="mode-btn" onclick="setMode('live')">&#128225; Live</button>
+  <button id="btn-sim"  class="mode-btn active-mode" onclick="setMode('sim')">&#127901;&#65039; Simulate</button>
 </div>
-<footer class="simbar" id="simbar" style="opacity:0.4">
+
+<div class="simbar" id="simbar">
   <span class="sim-label">&#127901;&#65039; SIMULATE:</span>
   <div class="scenario-chips">
     <button onclick="setScenario('normal')"   id="sc-normal">&#9989; Normal</button>
@@ -23,91 +31,119 @@
     <button onclick="setScenario('heat')"     id="sc-heat">&#127777;&#65039; Heat</button>
     <button onclick="setScenario('critical')" id="sc-critical">&#128128; Critical</button>
   </div>
-</footer>
-<main class="grid">
-<section class="card crop-card">
-  <div id="crop-tabs" class="crop-tabs">
-    <button class="crop-tab active" onclick="setCrop('rice')">&#127806; Rice</button>
-    <button class="crop-tab" onclick="setCrop('maize')">&#127805; Maize</button>
-    <button class="crop-tab" onclick="setCrop('groundnut')">&#129372; Groundnut</button>
-    <button class="crop-tab" onclick="setCrop('sugarcane')">&#127819; Sugarcane</button>
-    <button class="crop-tab" onclick="setCrop('coconut')">&#129381; Coconut</button>
-  </div>
-  <div class="stage-row"><label class="stage-label">Stage:</label><select id="stageSel" class="stage-sel" onchange="runPredict()"></select></div>
-  <div id="cropFace" class="crop-face">
-    <svg id="cropSvg" viewBox="0 0 80 80" width="90" height="90">
-      <ellipse cx="40" cy="42" rx="22" ry="22" fill="#1a2e1a" stroke="#2ecc71" stroke-width="2"/>
-      <circle id="eye-l" cx="33" cy="38" r="2.8" fill="#2ecc71"/>
-      <circle id="eye-r" cx="47" cy="38" r="2.8" fill="#2ecc71"/>
-      <path id="mouth" d="M33 43 Q40 50 47 43" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round"/>
-      <g id="sparkles"><text x="8" y="20" font-size="10">&#10024;</text><text x="58" y="20" font-size="10">&#10024;</text></g>
-      <line x1="40" y1="20" x2="40" y2="5" stroke="#2ecc71" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="40" cy="4" rx="5" ry="3" fill="#2ecc71" opacity="0.7"/>
-    </svg>
-  </div>
-  <div class="gauge-wrap">
-    <svg viewBox="0 0 120 70" width="160">
-      <path d="M10 65 A55 55 0 0 1 110 65" fill="none" stroke="#1e3320" stroke-width="12" stroke-linecap="round"/>
-      <path id="gaugeFill" d="M10 65 A55 55 0 0 1 110 65" fill="none" stroke="#2ecc71" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 173"/>
-      <path id="gaugeNeedle" d="M60 65 L60 20" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90,60,65)"/>
-      <circle cx="60" cy="65" r="5" fill="#1a2e1a" stroke="#2ecc71" stroke-width="1.5"/>
-    </svg>
-    <div id="scoreText" class="gauge-score">--</div>
-    <div id="gaugeTrack" class="gauge-sub">HEALTH SCORE / 100</div>
-  </div>
-  <div id="healthTag" class="health-tag">-- --</div>
-</section>
-<section class="card sensor-card">
-  <div class="panel-title" id="pt-sensor">LIVE SENSOR READINGS</div>
-  <div class="sensor-grid">
-    <div class="s-cell"><div class="s-icon">&#128167;</div><div class="s-label" id="lbl-moist">Soil Moisture</div><div class="s-val" id="v-moist">--%</div><div class="s-bar"><div class="s-fill" id="b-moist"></div></div></div>
-    <div class="s-cell"><div class="s-icon">&#129778;</div><div class="s-label" id="lbl-tds">Water TDS</div><div class="s-val" id="v-tds">-- ppm</div><div class="s-bar"><div class="s-fill" id="b-tds"></div></div></div>
-    <div class="s-cell"><div class="s-icon">&#127777;&#65039;</div><div class="s-label" id="lbl-airtemp">Air Temp</div><div class="s-val" id="v-air">--&#176;C</div><div class="s-bar"><div class="s-fill" id="b-air"></div></div></div>
-    <div class="s-cell"><div class="s-icon">&#128166;</div><div class="s-label" id="lbl-hum">Humidity</div><div class="s-val" id="v-hum">--%</div><div class="s-bar"><div class="s-fill" id="b-hum"></div></div></div>
-    <div class="s-cell"><div class="s-icon">&#127807;</div><div class="s-label" id="lbl-soiltemp">Soil Temp</div><div class="s-val" id="v-soiltemp">--&#176;C</div><div class="s-bar"><div class="s-fill" id="b-soiltemp"></div></div></div>
-  </div>
-  <div class="panel-title" id="pt-gas">GAS SENSORS</div>
-  <div class="gas-row">
-    <span class="gas-pill">NH3 <b id="v-mq135">--</b></span>
-    <span class="gas-pill">CH4 <b id="v-mq4">--</b></span>
-    <span class="gas-pill">CO <b id="v-mq7">--</b></span>
-  </div>
-  <div class="decision-row">
-    <div class="d-card"><div class="d-val" id="d-irrigate">--</div><div class="d-label" id="dlbl-irrigate">Irrigate</div></div>
-    <div class="d-card"><div class="d-val" id="d-pump">--</div><div class="d-label" id="dlbl-pump">Pump</div></div>
-    <div class="d-card"><div class="d-val" id="d-gas">--</div><div class="d-label" id="dlbl-gas">Gas</div></div>
-    <div class="d-card"><div class="d-val" id="d-stage">--</div><div class="d-label" id="dlbl-stage">Stage</div></div>
-  </div>
-  <div class="trend-strip">
-    <span class="trend-key" id="tk-moist">Moisture:</span><span class="trend-val" id="t-moist">--</span>
-    <span class="trend-key" id="tk-water">Water:</span><span class="trend-val" id="t-tds">--</span>
-    <span class="trend-key" id="tk-air">Air Quality:</span><span class="trend-val" id="t-aqi">--</span>
-  </div>
-</section>
-<section class="card advice-card">
-  <div class="advice-title" id="adviceTitle">&#129302; AI Field Advice</div>
-  <div id="adviceText" class="advice-text">Analyzing...</div>
-  <div id="weatherNote" class="weather-note"></div>
-  <div id="confText" class="conf-text"></div>
-  <div id="weatherStrip" class="weather-strip"><div id="weatherPill" class="weather-pill">&#127780;&#65039; Loading...</div></div>
-  <div id="forecastStrip" class="forecast-strip"></div>
-  <button id="waBtn" onclick="sendWhatsApp()" style="margin:8px 0;width:100%;background:#1a3320;color:#2ecc71;border:1px solid #2ecc71;border-radius:10px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;">&#128242; Send WhatsApp Alert</button>
-  <div class="chat-head"><span class="chat-head-title" id="chatHeadTitle">&#127807; AI Farming Companion</span><span id="chatDot" class="chat-dot"></span></div>
-  <div id="chatBox" class="chat-box"><div class="chat-msg bot"><span id="chatWelcome">&#128075; Hi! I am your AI Farming Companion. Ask me anything! &#127807;</span></div></div>
-  <div class="quick-grid">
-    <button onclick="quickAsk(0)">&#128167; Irrigate?</button>
-    <button onclick="quickAsk(1)">&#129778; Water safe?</button>
-    <button onclick="quickAsk(2)">&#127807; Health?</button>
-    <button onclick="quickAsk(3)">&#127807; Fertilize?</button>
-    <button onclick="quickAsk(4)">&#9729;&#65039; Air quality?</button>
-    <button onclick="quickAsk(5)">&#9881;&#65039; Pump status?</button>
-  </div>
-  <div class="chat-input-row">
-    <input id="chatInput" class="chat-input" placeholder="Ask about your farm..." onkeydown="if(event.key==='Enter')sendChat()">
-    <button class="chat-send" onclick="sendChat()">&#10148;</button>
-  </div>
-  <div id="chatStatus" class="chat-status"></div>
-</section>
+</div>
+
+<main class="tri-grid">
+
+  <!-- ══ LEFT — SENSOR READINGS ══ -->
+  <section class="card sensor-card">
+    <div class="panel-title" id="pt-sensor">LIVE SENSOR READINGS</div>
+    <div class="sensor-grid">
+      <div class="s-cell"><div class="s-icon">&#128167;</div><div class="s-label" id="lbl-moist">Soil Moisture</div><div class="s-val" id="v-moist">--%</div><div class="s-bar"><div class="s-fill" id="b-moist"></div></div></div>
+      <div class="s-cell"><div class="s-icon">&#129778;</div><div class="s-label" id="lbl-tds">Water TDS</div><div class="s-val" id="v-tds">-- ppm</div><div class="s-bar"><div class="s-fill" id="b-tds"></div></div></div>
+      <div class="s-cell"><div class="s-icon">&#127777;&#65039;</div><div class="s-label" id="lbl-airtemp">Air Temp</div><div class="s-val" id="v-air">--&#176;C</div><div class="s-bar"><div class="s-fill" id="b-air"></div></div></div>
+      <div class="s-cell"><div class="s-icon">&#128166;</div><div class="s-label" id="lbl-hum">Humidity</div><div class="s-val" id="v-hum">--%</div><div class="s-bar"><div class="s-fill" id="b-hum"></div></div></div>
+      <div class="s-cell"><div class="s-icon">&#127807;</div><div class="s-label" id="lbl-soiltemp">Soil Temp</div><div class="s-val" id="v-soiltemp">--&#176;C</div><div class="s-bar"><div class="s-fill" id="b-soiltemp"></div></div></div>
+    </div>
+    <div class="panel-title" id="pt-gas">GAS SENSORS</div>
+    <div class="gas-row">
+      <span class="gas-pill">NH3 <b id="v-mq135">--</b></span>
+      <span class="gas-pill">CH4 <b id="v-mq4">--</b></span>
+      <span class="gas-pill">CO <b id="v-mq7">--</b></span>
+    </div>
+    <div class="decision-row">
+      <div class="d-card"><div class="d-val" id="d-irrigate">--</div><div class="d-label" id="dlbl-irrigate">Irrigate</div></div>
+      <div class="d-card"><div class="d-val" id="d-pump">--</div><div class="d-label" id="dlbl-pump">Pump</div></div>
+      <div class="d-card"><div class="d-val" id="d-gas">--</div><div class="d-label" id="dlbl-gas">Gas</div></div>
+      <div class="d-card"><div class="d-val" id="d-stage">--</div><div class="d-label" id="dlbl-stage">Stage</div></div>
+    </div>
+    <div class="trend-strip">
+      <span class="trend-key" id="tk-moist">Moisture:</span><span class="trend-val" id="t-moist">--</span>
+      <span class="trend-key" id="tk-water">Water:</span><span class="trend-val" id="t-tds">--</span>
+      <span class="trend-key" id="tk-air">Air Quality:</span><span class="trend-val" id="t-aqi">--</span>
+    </div>
+  </section>
+
+  <!-- ══ CENTRE — GAUGE + CROP ══ -->
+  <section class="card centre-card">
+    <div id="crop-tabs" class="crop-tabs">
+      <button class="crop-tab active">&#127806; Rice</button>
+      <button class="crop-tab">&#127805; Maize</button>
+      <button class="crop-tab">&#129372; Groundnut</button>
+      <button class="crop-tab">&#127819; Sugarcane</button>
+      <button class="crop-tab">&#129381; Coconut</button>
+    </div>
+    <div class="stage-row">
+      <label class="stage-label">Stage:</label>
+      <select id="stageSel" class="stage-sel" onchange="runPredict()"></select>
+    </div>
+
+    <!-- Crop face -->
+    <div id="cropFace" class="crop-face">
+      <svg id="cropSvg" viewBox="0 0 80 80" width="90" height="90">
+        <ellipse cx="40" cy="42" rx="22" ry="22" fill="#1a2e1a" stroke="#2ecc71" stroke-width="2"/>
+        <circle id="eye-l" cx="33" cy="38" r="2.8" fill="#2ecc71"/>
+        <circle id="eye-r" cx="47" cy="38" r="2.8" fill="#2ecc71"/>
+        <path id="mouth" d="M33 43 Q40 50 47 43" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round"/>
+        <g id="sparkles"><text x="8" y="20" font-size="10">&#10024;</text><text x="58" y="20" font-size="10">&#10024;</text></g>
+        <line x1="40" y1="20" x2="40" y2="5" stroke="#2ecc71" stroke-width="2" stroke-linecap="round"/>
+        <ellipse cx="40" cy="4" rx="5" ry="3" fill="#2ecc71" opacity="0.7"/>
+      </svg>
+    </div>
+
+    <!-- Big centred gauge -->
+    <div class="gauge-wrap">
+      <svg viewBox="0 0 120 70" width="200">
+        <path d="M10 65 A55 55 0 0 1 110 65" fill="none" stroke="#1e3320" stroke-width="12" stroke-linecap="round"/>
+        <path id="gaugeFill" d="M10 65 A55 55 0 0 1 110 65" fill="none" stroke="#2ecc71" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 173"/>
+        <path id="gaugeNeedle" d="M60 65 L60 20" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90,60,65)"/>
+        <circle cx="60" cy="65" r="5" fill="#1a2e1a" stroke="#2ecc71" stroke-width="1.5"/>
+      </svg>
+      <div id="scoreText" class="gauge-score">--</div>
+      <div id="gaugeTrack" class="gauge-sub">HEALTH SCORE / 100</div>
+    </div>
+    <div id="healthTag" class="health-tag">-- --</div>
+
+    <!-- Advice + weather below gauge -->
+    <div class="advice-title" id="adviceTitle">&#129302; AI Field Advice</div>
+    <div id="adviceText" class="advice-text">Analyzing...</div>
+    <div id="weatherNote" class="weather-note"></div>
+    <div id="confText" class="conf-text"></div>
+    <div id="weatherStrip" class="weather-strip">
+      <div id="weatherPill" class="weather-pill">&#127780;&#65039; Loading...</div>
+    </div>
+    <div id="forecastStrip" class="forecast-strip"></div>
+    <button id="waBtn" onclick="sendWhatsApp()" class="wa-btn">&#128242; Send WhatsApp Alert</button>
+    <span id="aiBadge" class="ai-badge">&#10024; Gemini</span>
+  </section>
+
+  <!-- ══ RIGHT — CHATBOT ══ -->
+  <section class="card chat-card">
+    <div class="chat-head">
+      <span class="chat-head-title" id="chatHeadTitle">&#127807; AI Farming Companion</span>
+      <span id="chatDot" class="chat-dot"></span>
+    </div>
+    <div id="chatBox" class="chat-box">
+      <div class="chat-msg bot">
+        <span id="chatWelcome">&#128075; Hi! I am your AI Farming Companion. Ask me anything! &#127807;</span>
+      </div>
+    </div>
+    <div class="quick-grid">
+      <button onclick="quickAsk(0)">&#128167; Irrigate?</button>
+      <button onclick="quickAsk(1)">&#129778; Water safe?</button>
+      <button onclick="quickAsk(2)">&#127807; Health?</button>
+      <button onclick="quickAsk(3)">&#127807; Fertilize?</button>
+      <button onclick="quickAsk(4)">&#9729;&#65039; Air quality?</button>
+      <button onclick="quickAsk(5)">&#9881;&#65039; Pump status?</button>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" class="chat-input" placeholder="Ask about your farm..."
+             onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" onclick="sendChat()">&#10148;</button>
+    </div>
+    <div id="chatStatus" class="chat-status"></div>
+  </section>
+
 </main>
 <script src="/static/script.js"></script>
 </body></html>
