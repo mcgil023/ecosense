@@ -218,7 +218,8 @@ async function runPredict() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({crop:currentCrop,
         stage: stEl ? stEl.value : 'germination',
-        sensors: currentSensors})
+        sensors: currentSensors,
+        mode: MODE})
     }).then(r => r.json());
 
     lastResult = d;
@@ -231,14 +232,11 @@ async function runPredict() {
     setText('confText',   S.conf + (d.confidence_pct||'--') + '%');
 
     // SVG gauge — dashoffset method (most reliable)
-    const fill   = gid('gaugeFill');
+    // fill removed
     const needle = gid('gaugeNeedle');
     const score  = d.health_score || 0;
     const ARC    = 173;
-    if (fill) {
-      fill.setAttribute('stroke-dasharray', ARC);
-      fill.setAttribute('stroke-dashoffset', ARC - (score / 100) * ARC);
-    }
+    // gaugeFill removed — needle only (fill element no longer in DOM)
     if (needle) needle.setAttribute('transform',
       `rotate(${-90 + (score / 100) * 180}, 60, 65)`);
 
