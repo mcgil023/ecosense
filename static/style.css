@@ -70,3 +70,98 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:#0d1a0f}
 ::-webkit-scrollbar-thumb{background:#1e3320;border-radius:2px}
+
+/* ══ 3-COLUMN LAYOUT ══════════════════════════════════════════ */
+.tri-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr 320px;
+  gap: 14px;
+  padding: 14px;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: start;
+}
+@media(max-width:900px){
+  .tri-grid { grid-template-columns: 1fr; }
+}
+
+/* Centre card — gauge centred */
+.centre-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.centre-card .gauge-wrap {
+  margin: 14px auto 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gauge-score { font-size: 2.6rem; font-weight: 900; color: #2ecc71; line-height: 1; }
+.gauge-sub   { font-size: 10px; color: #4a7c59; letter-spacing: 1px; margin-top: 2px; }
+.centre-card .advice-title { margin-top: 10px; }
+.centre-card .advice-text  { font-size: 13px; max-width: 340px; }
+
+/* Left sensor card */
+.sensor-card { overflow-y: auto; max-height: calc(100vh - 140px); }
+
+/* Right chat card */
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  max-height: 800px;
+}
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ══ ESP32 STATUS BADGE ═══════════════════════════════════════ */
+.esp32-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 12px;
+  border: 1px solid; display: inline-flex;
+  align-items: center; gap: 4px;
+  transition: all .4s ease;
+}
+.esp32-on  { background: #0d2b0d; color: #2ecc71; border-color: #2ecc71; }
+.esp32-off { background: #2b0d0d; color: #e74c3c; border-color: #e74c3c; }
+
+/* ══ LANG BUTTON ═════════════════════════════════════════════ */
+.lang-btn {
+  background: #162118; color: #2ecc71;
+  border: 1px solid #2ecc71; border-radius: 14px;
+  padding: 3px 12px; font-size: 11px;
+  font-weight: 700; cursor: pointer;
+}
+.lang-btn:hover { background: #2ecc71; color: #0a1a0a; }
+
+/* ══ WA BUTTON ═══════════════════════════════════════════════ */
+.wa-btn {
+  margin: 8px 0; width: 100%;
+  background: #1a3320; color: #2ecc71;
+  border: 1px solid #2ecc71; border-radius: 10px;
+  padding: 8px; font-size: 12px;
+  font-weight: 700; cursor: pointer;
+}
+.wa-btn:hover { background: #2ecc71; color: #0a1a0a; }
+.wa-btn.alert-active { background: #e74c3c; border-color: #e74c3c; color: #fff; animation: pulse 1s infinite; }
+
+/* ══ AI BADGE ════════════════════════════════════════════════ */
+.ai-badge {
+  display: inline-block; margin-top: 6px;
+  background: #8e44ad; color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 10px; border-radius: 10px;
+}
+
+/* ══ SIMBAR ══════════════════════════════════════════════════ */
+.simbar {
+  display: flex; align-items: center;
+  gap: 10px; padding: 6px 16px;
+  background: #0d1f0d; border-bottom: 1px solid #1e3320;
+  flex-wrap: wrap;
+}
