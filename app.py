@@ -1,4 +1,5 @@
 import os,json,pickle
+import math
 from pathlib import Path
 from datetime import datetime
 from collections import deque
@@ -32,22 +33,30 @@ esp32_data={}
 hist={k:deque(maxlen=20) for k in ["soil_moisture","tds_ppm","air_temp_c","mq135_ammonia"]}
 def get_weather():
     try:
-        if not WEATHER_API_KEY: return {"enabled":False,"temp":30,"humidity":60,"rain":0,"wind":2,"city":WEATHER_CITY}
+        if not WEATHER_API_KEY:
+            return {"enabled":False,"temp":None,"humidity":None,"rain":None,"wind":None,"city":WEATHER_CITY,"error":"Weather API is not configured"}
         r=requests.get("https://api.openweathermap.org/data/2.5/weather",params={"q":WEATHER_CITY,"appid":WEATHER_API_KEY,"units":"metric"},timeout=8)
+        r.raise_for_status()
         d=r.json()
         return {"enabled":True,"temp":round(d["main"]["temp"],1),"humidity":d["main"]["humidity"],"rain":d.get("rain",{}).get("1h",0),"wind":round(d["wind"]["speed"],1),"city":WEATHER_CITY}
-    except: return {"enabled":False,"temp":30,"humidity":60,"rain":0,"wind":2,"city":WEATHER_CITY}
+    except Exception as e:
+        app.logger.warning("Weather request failed: %s", e)
+        return {"enabled":False,"temp":None,"humidity":None,"rain":None,"wind":None,"city":WEATHER_CITY,"error":"Weather data is unavailable"}
 def get_forecast():
     try:
-        if not WEATHER_API_KEY: return {"enabled":False,"next24h":[],"rain_coming":False,"heat_coming":False,"total_rain_mm":0,"max_temp":30,"summary":"Stable weather next 24h"}
+        if not WEATHER_API_KEY:
+            return {"enabled":False,"next24h":[],"rain_coming":False,"heat_coming":False,"total_rain_mm":0,"max_temp":None,"summary":"Weather data unavailable"}
         r=requests.get("https://api.openweathermap.org/data/2.5/forecast",params={"q":WEATHER_CITY,"appid":WEATHER_API_KEY,"units":"metric","cnt":8},timeout=8)
+        r.raise_for_status()
         d=r.json()
         slots=[{"time":i["dt_txt"][11:16],"temp":round(i["main"]["temp"],1),"humidity":i["main"]["humidity"],"rain":round(i.get("rain",{}).get("3h",0),1),"desc":i["weather"][0]["main"]} for i in d.get("list",[])[:8]]
         rc=any(s["rain"]>1 for s in slots); hc=any(s["temp"]>36 for s in slots)
         mt=max((s["temp"] for s in slots),default=30); tr=round(sum(s["rain"] for s in slots),1)
         sm=("Heavy rain "+str(tr)+"mm - skip irrigation" if rc and tr>5 else "Light rain expected - reduce irrigation" if rc else "Heat "+str(mt)+"C ahead - irrigate early morning" if hc else "Stable weather next 24h")
         return {"enabled":True,"next24h":slots,"rain_coming":rc,"heat_coming":hc,"total_rain_mm":tr,"max_temp":mt,"summary":sm}
-    except: return {"enabled":False,"next24h":[],"rain_coming":False,"heat_coming":False,"total_rain_mm":0,"max_temp":30,"summary":"Stable weather next 24h"}
+    except Exception as e:
+        app.logger.warning("Forecast request failed: %s", e)
+        return {"enabled":False,"next24h":[],"rain_coming":False,"heat_coming":False,"total_rain_mm":0,"max_temp":None,"summary":"Weather data unavailable"}
 def predict(crop,stage,sensors,w):
     cfg=CROPS.get(crop,CROPS["rice"])
     sd={k:float(sensors.get(k,v)) for k,v in [("soil_moisture",72),("tds_ppm",350),("air_temp_c",28),("soil_temp_c",24),("humidity_pct",65),("mq135_ammonia",50),("mq4_methane",200),("mq7_co",10)]}
@@ -69,8 +78,8 @@ def predict(crop,stage,sensors,w):
     irrigate=sd["soil_moisture"]<cfg["moist_min"] and not pump_locked
     pump_on=irrigate and not pump_locked
     fc=get_forecast()
-    if w.get("rain",0)>2 and pump_on: pump_on=False; irrigate=False
-    if fc.get("rain_coming") and fc.get("total_rain_mm",0)>5 and pump_on: pump_on=False; irrigate=False
+    if w.get("enabled") and (w.get("rain") or 0)>2 and pump_on: pump_on=False; irrigate=False
+    if fc.get("enabled") and fc.get("rain_coming") and fc.get("total_rain_mm",0)>5 and pump_on: pump_on=False; irrigate=False
     if fc.get("heat_coming") and sd["soil_moisture"]<(cfg["moist_opt"]-5) and not pump_locked: irrigate=True; pump_on=True
     hm=list(hist["soil_moisture"])
     trend=("rising" if len(hm)>=3 and hm[-1]>hm[-3]+2 else "falling" if len(hm)>=3 and hm[-1]<hm[-3]-2 else "stable")
@@ -147,7 +156,28 @@ def stream_r():
 def esp32_r():
     global esp32_data
     import json as _j
-    raw=request.json or {}; esp32_data=raw.get("sensors",raw)
+    raw=request.json or {}
+    candidate=raw.get("sensors",raw) if isinstance(raw,dict) else raw
+    if not isinstance(candidate, dict):
+        return jsonify({"error":"Sensor payload must be a JSON object"}),400
+    sensor_ranges={
+        "soil_moisture":(0,100),"tds_ppm":(0,10000),"air_temp_c":(-50,80),
+        "soil_temp_c":(-50,80),"humidity_pct":(0,100),"mq135_ammonia":(0,100000),
+        "mq4_methane":(0,100000),"mq7_co":(0,100000)
+    }
+    for key,value in candidate.items():
+        if key not in sensor_ranges:
+            continue
+        if isinstance(value,bool):
+            return jsonify({"error":f"{key} must be numeric"}),400
+        try:
+            number=float(value)
+        except (TypeError,ValueError):
+            return jsonify({"error":f"{key} must be numeric"}),400
+        low,high=sensor_ranges[key]
+        if not math.isfinite(number) or not low <= number <= high:
+            return jsonify({"error":f"{key} is outside the allowed range"}),400
+    esp32_data=candidate
     payload = _j.dumps(esp32_data)
     with _sse_lock:
         dead=[]
@@ -169,7 +199,7 @@ def chat_r():
         if gemini_model:
             try:
                 li=("Reply ONLY in Tamil." if lang=="ta" else "Reply in simple English.")
-                prompt=(f"EcoSense AI Crop:{crop} Stage:{stg} Moisture:{sd.get('soil_moisture',0):.0f}% TDS:{sd.get('tds_ppm',0):.0f}ppm(max:{cfg['tds_max']}) AirTemp:{sd.get('air_temp_c',0):.1f}C Humidity:{sd.get('humidity',0):.0f}% NH3:{sd.get('mq135_ammonia',0):.0f}ppm CH4:{sd.get('mq4_methane',0):.0f}ppm CO:{sd.get('mq7_co',0):.0f}ppm GasAlert:{res['gas_alert']} PumpLocked:{res['pump_locked']} TDSSafe:{res['tds_safe']} Health:{res['health_score']}/100 Status:{res['health_status']}. Q:{msg}. {li} 2 sentences max.")
+                prompt=(f"EcoSense AI Crop:{crop} Stage:{stg} Moisture:{sd.get('soil_moisture',0):.0f}% TDS:{sd.get('tds_ppm',0):.0f}ppm(max:{cfg['tds_max']}) AirTemp:{sd.get('air_temp_c',0):.1f}C Humidity:{sd.get('humidity_pct',0):.0f}% NH3:{sd.get('mq135_ammonia',0):.0f}ppm CH4:{sd.get('mq4_methane',0):.0f}ppm CO:{sd.get('mq7_co',0):.0f}ppm GasAlert:{res['gas_alert']} PumpLocked:{res['pump_locked']} TDSSafe:{res['tds_safe']} Health:{res['health_score']}/100 Status:{res['health_status']}. Q:{msg}. {li} 2 sentences max.")
                 r=gemini_model.generate_content(prompt)
                 return jsonify({"reply":r.text.strip(),"source":"gemini"})
             except Exception as e: print(f"Gemini: {e}")
