@@ -1,15 +1,5 @@
-# EcoSense — AI Smart Farming Dashboard
+# EcoSense
 
-## Deploy to Render.com
-1. Push full folder to GitHub
-2. render.com → New Web Service → connect repo
-3. Build: `pip install -r requirements.txt`
-4. Start: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120`
-5. Add env vars: GEMINI_API_KEY, WEATHER_API_KEY, WEATHER_CITY
+EcoSense is a smart-farming website that displays live ESP32 sensor readings, crop health, water quality, air-quality alerts, irrigation decisions, weather information, and AI-assisted farming guidance in one dashboard.
 
-## Local run
-python app.py → open http://localhost:5000
-
-## ESP32
-POST JSON to: https://your-app.onrender.com/esp32
-Check live data: https://your-app.onrender.com/live
+It was built to help small farms and greenhouses monitor field conditions easily, make better irrigation decisions, detect unsafe conditions early, and reduce water and crop waste using affordable connected sensors.

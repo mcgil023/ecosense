@@ -185,7 +185,7 @@ const SCENARIOS = {
 function setScenario(name) {
   currentSensors = {...SCENARIOS[name]};
   document.querySelectorAll('.scenario-chips button')
-    .forEach(b => b.classList.toggle('active-chip', b.id === 'sc-'+name));
+    .forEach(b => b.classList.toggle('active-sc', b.id === 'sc-'+name));
   renderSensors(currentSensors);
   runPredict();
 }
@@ -320,6 +320,7 @@ function startLive() {
         if (!d || Object.keys(d).length === 0) return;  // heartbeat
         currentSensors = {...currentSensors, ...d};
         renderSensors(currentSensors);
+        updateEsp32Badge(true);
         runPredict();
       } catch {}
     };
@@ -339,23 +340,18 @@ function stopLive() {
   if (_sse)        { _sse.close(); _sse = null; }
   if (liveInterval){ clearInterval(liveInterval); liveInterval = null; }
 }
-async function fetchLive() {
-  try {
-    const d = await fetch('/live').then(r => r.json());
-    if (d.status === 'no_data') return;
-    currentSensors = {...currentSensors, ...d};
-    renderSensors(currentSensors);
-    runPredict();
-  } catch(e) { console.warn('fetchLive:', e); }
-}
-
 // ── Weather & Forecast ────────────────────────────────────────
 async function loadWeather() {
   try {
     const d = await fetch('/weather').then(r => r.json());
     const p = gid('weatherPill');
-    if(p && d.enabled) p.textContent = d.city+' '+d.temp+'°C 💧'+d.humidity+'%';
-  } catch {}
+    if (p) p.textContent = d.enabled
+      ? d.city+' '+d.temp+'°C 💧'+d.humidity+'%'
+      : '☁️ Weather unavailable';
+  } catch {
+    const p = gid('weatherPill');
+    if (p) p.textContent = '☁️ Weather unavailable';
+  }
 }
 
 async function loadForecast() {
@@ -391,8 +387,6 @@ function updateEsp32Badge(connected) {
     b.className   = 'esp32-badge esp32-off';
   }
 }
-// Wrap fetchLive to track ESP32 presence
-const _origFetchLive = fetchLive;
 async function fetchLive() {
   try {
     const d = await fetch('/live').then(r => r.json());
@@ -427,10 +421,10 @@ async function sendChat() {
   const msg = inp.value.trim(); if (!msg) return;
   inp.value = '';
   const uDiv = document.createElement('div');
-  uDiv.className = 'chat-msg user-msg'; uDiv.textContent = msg;
+  uDiv.className = 'chat-msg user'; uDiv.textContent = msg;
   box.appendChild(uDiv);
   const dot = document.createElement('div');
-  dot.className = 'chat-msg bot-msg typing';
+  dot.className = 'chat-msg bot typing';
   dot.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
   box.appendChild(dot); box.scrollTop = box.scrollHeight;
   try {
@@ -443,12 +437,12 @@ async function sendChat() {
     });
     const d = await r.json(); dot.remove();
     const bDiv = document.createElement('div');
-    bDiv.className = 'chat-msg bot-msg'; bDiv.textContent = d.reply || '...';
+    bDiv.className = 'chat-msg bot'; bDiv.textContent = d.reply || '...';
     box.appendChild(bDiv); box.scrollTop = box.scrollHeight;
   } catch {
     dot.remove();
     const eDiv = document.createElement('div');
-    eDiv.className = 'chat-msg bot-msg';
+    eDiv.className = 'chat-msg bot';
     eDiv.textContent = uiLang==='ta'?'பிழை — மீண்டும் முயற்சிக்கவும்.':'Error — please try again.';
     box.appendChild(eDiv);
   }
