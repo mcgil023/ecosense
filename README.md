@@ -1,4 +1,4 @@
-# EcoSense
+# EcoSense.
 
 EcoSense is a smart-farming website that displays live ESP32 sensor readings, crop health, water quality, air-quality alerts, irrigation decisions, weather information, and AI-assisted farming guidance in one dashboard.
 
