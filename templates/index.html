@@ -120,29 +120,53 @@
   <!-- ══ RIGHT — CHATBOT ══ -->
   <section class="card chat-card">
     <div class="chat-head">
-      <span class="chat-head-title" id="chatHeadTitle">&#127807; AI Farming Companion</span>
-      <span id="chatDot" class="chat-dot"></span>
+      <div class="chat-head-left">
+        <span class="chat-head-title" id="chatHeadTitle">&#127807; EcoSense AI Companion</span>
+        <span id="chatDot" class="chat-dot"></span>
+        <span id="chatSourceBadge" class="chat-source-badge">⚡ Checking AI...</span>
+      </div>
+      <div class="chat-head-actions">
+        <button id="apiKeyBtn" class="chat-action-btn" title="Configure Gemini API Key" onclick="openKeyModal()">🔑 Key</button>
+        <button id="clearChatBtn" class="chat-action-btn" title="Clear Conversation" onclick="clearChat()">🗑️</button>
+      </div>
     </div>
     <div id="chatBox" class="chat-box">
       <div class="chat-msg bot">
-        <span id="chatWelcome">&#128075; Hi! I am your AI Farming Companion. Ask me anything! &#127807;</span>
+        <div class="chat-msg-header"><span class="bot-badge">EcoSense Complete AI</span></div>
+        <div class="chat-msg-content" id="chatWelcome">&#128075; Hi! I am your complete AI Farming Companion. Ask me anything about crop diseases, fertilizers, irrigation, weather, or general questions! &#127807;</div>
       </div>
     </div>
     <div class="quick-grid">
       <button onclick="quickAsk(0)">&#128167; Irrigate?</button>
       <button onclick="quickAsk(1)">&#129778; Water safe?</button>
       <button onclick="quickAsk(2)">&#127807; Health?</button>
-      <button onclick="quickAsk(3)">&#127807; Fertilize?</button>
-      <button onclick="quickAsk(4)">&#9729;&#65039; Air quality?</button>
-      <button onclick="quickAsk(5)">&#9881;&#65039; Pump status?</button>
+      <button onclick="quickAsk(3)">&#127793; Fertilizers?</button>
+      <button onclick="quickAsk(4)">&#128027; Pest / Disease?</button>
+      <button onclick="quickAsk(5)">&#9881;&#65039; Pump & Gas?</button>
     </div>
     <div class="chat-input-row">
-      <input id="chatInput" class="chat-input" placeholder="Ask about your farm..."
+      <input id="chatInput" class="chat-input" placeholder="Ask about your farm, fertilizers, pests, or anything..."
              onkeydown="if(event.key==='Enter')sendChat()">
-      <button class="chat-send" onclick="sendChat()">&#10148;</button>
+      <button class="chat-send" onclick="sendChat()" title="Send">&#10148;</button>
     </div>
     <div id="chatStatus" class="chat-status"></div>
   </section>
+
+  <!-- Gemini Key Configuration Modal -->
+  <div id="keyModal" class="key-modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>🔑 Gemini AI Configuration</h3>
+        <button class="modal-close" onclick="closeKeyModal()">&times;</button>
+      </div>
+      <p class="modal-desc">Enter your Google Gemini API key to enable live generative AI across any topic. Without a key, EcoSense operates using its built-in offline agricultural knowledge engine.</p>
+      <input type="password" id="geminiKeyInput" class="modal-input" placeholder="AIzaSy..." />
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="closeKeyModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveApiKey()">Save Key</button>
+      </div>
+    </div>
+  </div>
 
 </main>
 <script src="/static/script.js"></script>

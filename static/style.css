@@ -157,3 +157,30 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;fo
   background:#0d1f0d; border-bottom:1px solid #1e3320;
   flex-wrap:wrap;
 }
+
+/* ── Enhanced Chatbot Styles ────────────────────────── */
+.chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.chat-head-left { display: flex; align-items: center; gap: 6px; }
+.chat-head-actions { display: flex; align-items: center; gap: 4px; }
+.chat-action-btn { background: #1a2e1d; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+.chat-action-btn:hover { background: var(--green); color: #000; }
+.chat-source-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #27ae60; color: #fff; margin-left: 4px; }
+.chat-msg-header { font-size: 10px; font-weight: 700; color: var(--green); margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+.chat-msg-content { word-break: break-word; }
+.chat-msg-content strong { color: #2ecc71; font-weight: 700; }
+.chat-msg-content ul, .chat-msg-content ol { margin: 4px 0 4px 16px; padding: 0; }
+.chat-msg-content li { margin-bottom: 2px; }
+.chat-msg-content p { margin: 4px 0; }
+.chat-msg-source { font-size: 9px; opacity: 0.7; margin-top: 4px; text-align: right; }
+
+/* Modal for API Key */
+.key-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-card { background: #0f1c11; border: 1px solid var(--border); border-radius: 12px; width: 90%; max-width: 440px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.modal-head h3 { margin: 0; color: var(--green); font-size: 16px; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.modal-desc { font-size: 12px; color: var(--muted); line-height: 1.4; margin-bottom: 14px; }
+.modal-input { width: 100%; box-sizing: border-box; background: #162618; border: 1px solid var(--border); border-radius: 8px; color: #fff; padding: 9px 12px; font-size: 13px; margin-bottom: 16px; outline: none; }
+.modal-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.btn-primary { background: var(--green); color: #000; border: none; border-radius: 8px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-secondary { background: #162618; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
