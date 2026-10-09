@@ -409,51 +409,224 @@ async function loadStatus() {
 }
 
 // ── Chat ──────────────────────────────────────────────────────
+// ── Complete AI Chat System ──────────────────────────────────
+let chatHistory = [];
+
+function getStoredGeminiKey() {
+  return localStorage.getItem('ecosense_gemini_key') || '';
+}
+
+function openKeyModal() {
+  const modal = gid('keyModal');
+  const inp = gid('geminiKeyInput');
+  if (modal) {
+    if (inp) inp.value = getStoredGeminiKey();
+    modal.style.display = 'flex';
+  }
+}
+
+function closeKeyModal() {
+  const modal = gid('keyModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function saveApiKey() {
+  const inp = gid('geminiKeyInput');
+  const key = inp ? inp.value.trim() : '';
+  if (key) {
+    localStorage.setItem('ecosense_gemini_key', key);
+    try {
+      await fetch('/api/key', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ key })
+      });
+    } catch(e) {}
+    alert(uiLang==='ta' ? 'API Key வெற்றிகரமாக சேமிக்கப்பட்டது!' : 'Gemini API Key saved successfully!');
+  } else {
+    localStorage.removeItem('ecosense_gemini_key');
+  }
+  closeKeyModal();
+  loadStatus();
+}
+
+function clearChat() {
+  chatHistory = [];
+  const box = gid('chatBox');
+  if (!box) return;
+  const welcomeText = uiLang === 'ta'
+    ? '👋 வணக்கம்! நான் உங்கள் முழுமையான AI விவசாய வழிகாட்டி. பயிர் நோய்கள், உரங்கள், பாசனம், வானிலை அல்லது எந்த பொதுவான கேள்வியும் கேளுங்கள்! 🌾'
+    : '👋 Hi! I am your complete AI Farming Companion. Ask me anything about crop diseases, fertilizers, irrigation, weather, or general questions! 🌾';
+  box.innerHTML = `
+    <div class="chat-msg bot">
+      <div class="chat-msg-header"><span class="bot-badge">EcoSense Complete AI</span></div>
+      <div class="chat-msg-content">${welcomeText}</div>
+    </div>
+  `;
+}
+
+function renderMarkdown(txt) {
+  if (!txt) return '';
+  let esc = txt
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  
+  // Bold **text**
+  esc = esc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Italic *text*
+  esc = esc.replace(/(^|[^\*])\*(?!\*)(.*?)\*/g, '$1<em>$2</em>');
+  
+  // Bullet lists (lines starting with - or *)
+  const lines = esc.split('\n');
+  let inList = false;
+  let html = '';
+  
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${trimmed.substring(2)}</li>`;
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (trimmed.length > 0) {
+        html += `<p>${line}</p>`;
+      }
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
 function quickAsk(i) {
-  const q = L[uiLang].qq[i]; if (!q) return;
-  const inp = gid('chatInput'); if(inp) inp.value = q;
-  sendChat();
+  const enQuestions = [
+    'Should I irrigate the farm now?',
+    'Is the water salinity and TDS safe for irrigation?',
+    'What is the overall crop health score and status?',
+    'What fertilizer and NPK should I apply at this stage?',
+    'How do I detect and treat common pests and diseases?',
+    'What is the pump lock and field gas sensor status?'
+  ];
+  const taQuestions = [
+    'தற்போது வயலுக்கு பாசனம் செய்ய வேண்டுமா?',
+    'நீரின் உப்புத்தன்மை (TDS) பாசனத்திற்கு பாதுகாப்பானதா?',
+    'பயிரின் தற்போதைய ஆரோக்கிய நிலை மற்றும் மதிப்பெண் என்ன?',
+    'இந்த வளர்ச்சிப் பருவத்தில் என்ன உரம் (NPK) இட வேண்டும்?',
+    'பயிரைத் தாக்கும் பூச்சி மற்றும் நோய்களை எவ்வாறு கட்டுப்படுத்துவது?',
+    'பாசன பம்ப் மற்றும் வாயு கசிவு எச்சரிக்கை நிலை என்ன?'
+  ];
+  const qList = (uiLang === 'ta') ? taQuestions : enQuestions;
+  const q = qList[i] || enQuestions[0];
+  const inp = gid('chatInput');
+  if (inp) {
+    inp.value = q;
+    sendChat();
+  }
+}
+
+async function loadStatus() {
+  try {
+    const d = await fetch('/status').then(r => r.json());
+    const b = gid('aiBadge');
+    const sb = gid('chatSourceBadge');
+    const storedKey = getStoredGeminiKey();
+    const isLive = d.gemini_ready || Boolean(storedKey);
+    
+    if (b) {
+      b.textContent = isLive ? '✨ Gemini AI' : '🌿 Local KB';
+      b.style.background = isLive ? '#8e44ad' : '#27ae60';
+    }
+    if (sb) {
+      sb.textContent = isLive ? '✨ Live AI' : '🌿 Local Engine';
+      sb.style.background = isLive ? '#8e44ad' : '#27ae60';
+    }
+  } catch(e) {}
 }
 
 async function sendChat() {
   const inp = gid('chatInput'), box = gid('chatBox');
   if (!inp || !box) return;
-  const msg = inp.value.trim(); if (!msg) return;
+  const msg = inp.value.trim();
+  if (!msg) return;
   inp.value = '';
+  
+  // Append user message
   const uDiv = document.createElement('div');
-  uDiv.className = 'chat-msg user'; uDiv.textContent = msg;
+  uDiv.className = 'chat-msg user';
+  uDiv.textContent = msg;
   box.appendChild(uDiv);
+  
+  // Append typing indicator
   const dot = document.createElement('div');
   dot.className = 'chat-msg bot typing';
   dot.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-  box.appendChild(dot); box.scrollTop = box.scrollHeight;
+  box.appendChild(dot);
+  box.scrollTop = box.scrollHeight;
+  
   try {
     const stEl = gid('stageSel');
-    const r = await fetch('/chat', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({message:msg, crop:currentCrop,
+    const storedKey = getStoredGeminiKey();
+    
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(storedKey ? {'X-Gemini-Key': storedKey} : {})
+      },
+      body: JSON.stringify({
+        message: msg,
+        history: chatHistory,
+        crop: currentCrop,
         stage: stEl ? stEl.value : 'germination',
-        sensors: currentSensors, lang: uiLang })
+        sensors: currentSensors,
+        lang: uiLang,
+        api_key: storedKey
+      })
     });
-    const d = await r.json(); dot.remove();
+    
+    const data = await res.json();
+    dot.remove();
+    
+    const replyText = data.reply || (uiLang === 'ta' ? 'பதில் பெற முடியவில்லை.' : 'No response.');
+    const sourceLabel = data.source === 'gemini' ? '✨ Gemini AI' : '🌿 EcoSense Local AI';
+    
+    // Add to history
+    chatHistory.push({ role: 'user', text: msg });
+    chatHistory.push({ role: 'model', text: replyText });
+    if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
+    
     const bDiv = document.createElement('div');
-    bDiv.className = 'chat-msg bot'; bDiv.textContent = d.reply || '...';
-    box.appendChild(bDiv); box.scrollTop = box.scrollHeight;
-  } catch {
+    bDiv.className = 'chat-msg bot';
+    bDiv.innerHTML = `
+      <div class="chat-msg-header">
+        <span class="bot-badge">EcoSense AI</span>
+        <span class="chat-msg-source">${sourceLabel}</span>
+      </div>
+      <div class="chat-msg-content">${renderMarkdown(replyText)}</div>
+    `;
+    box.appendChild(bDiv);
+    box.scrollTop = box.scrollHeight;
+    
+    // Update badge if source confirmed
+    const sb = gid('chatSourceBadge');
+    if (sb) {
+      if (data.source === 'gemini') {
+        sb.textContent = '✨ Live AI';
+        sb.style.background = '#8e44ad';
+      }
+    }
+  } catch(err) {
     dot.remove();
     const eDiv = document.createElement('div');
     eDiv.className = 'chat-msg bot';
-    eDiv.textContent = uiLang==='ta'?'பிழை — மீண்டும் முயற்சிக்கவும்.':'Error — please try again.';
+    eDiv.textContent = uiLang === 'ta' ? 'பிழை - மீண்டும் முயற்சிக்கவும்.' : 'Error — please try again.';
     box.appendChild(eDiv);
+    box.scrollTop = box.scrollHeight;
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const inp = gid('chatInput');
-  if (inp) inp.addEventListener('keydown', e => { if(e.key==='Enter') sendChat(); });
-});
 
-// ── WhatsApp ──────────────────────────────────────────────────
 function sendWhatsApp() {
   if (!lastResult) return;
   const hs = lastResult.health_status, sc = lastResult.health_score;
@@ -465,6 +638,8 @@ function sendWhatsApp() {
 
 // ── Boot ──────────────────────────────────────────────────────
 async function boot() {
+  const _ci = gid('chatInput');
+  if (_ci) _ci.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
   await loadCrops();
   await loadStatus();
   loadWeather();
