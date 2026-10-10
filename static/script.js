@@ -174,12 +174,12 @@ function fillStages() {
 
 // ── Scenarios ─────────────────────────────────────────────────
 const SCENARIOS = {
-  normal:  {soil_moisture:72,tds_ppm:350, air_temp_c:28,soil_temp_c:24,humidity_pct:65,mq135_ammonia:50, mq4_methane:200, mq7_co:10},
-  dry:     {soil_moisture:30,tds_ppm:380, air_temp_c:34,soil_temp_c:30,humidity_pct:40,mq135_ammonia:60, mq4_methane:210, mq7_co:12},
-  saline:  {soil_moisture:55,tds_ppm:1400,air_temp_c:30,soil_temp_c:26,humidity_pct:60,mq135_ammonia:55, mq4_methane:200, mq7_co:10},
-  gas:     {soil_moisture:68,tds_ppm:360, air_temp_c:29,soil_temp_c:25,humidity_pct:70,mq135_ammonia:320,mq4_methane:1200,mq7_co:150},
-  heat:    {soil_moisture:50,tds_ppm:400, air_temp_c:42,soil_temp_c:38,humidity_pct:30,mq135_ammonia:70, mq4_methane:220, mq7_co:15},
-  critical:{soil_moisture:20,tds_ppm:1600,air_temp_c:44,soil_temp_c:40,humidity_pct:20,mq135_ammonia:350,mq4_methane:1300,mq7_co:180}
+  normal:  {soil_moisture:72,tds_ppm:350, air_temp_c:28,soil_temp_c:24,humidity_pct:65,mq135_ammonia:50, mq4_methane:200, mq7_co:10, mq2_smoke:15},
+  dry:     {soil_moisture:30,tds_ppm:380, air_temp_c:34,soil_temp_c:30,humidity_pct:40,mq135_ammonia:60, mq4_methane:210, mq7_co:12, mq2_smoke:20},
+  saline:  {soil_moisture:55,tds_ppm:1400,air_temp_c:30,soil_temp_c:26,humidity_pct:60,mq135_ammonia:55, mq4_methane:200, mq7_co:10, mq2_smoke:18},
+  gas:     {soil_moisture:68,tds_ppm:360, air_temp_c:29,soil_temp_c:25,humidity_pct:70,mq135_ammonia:320,mq4_methane:1200,mq7_co:150, mq2_smoke:120},
+  heat:    {soil_moisture:50,tds_ppm:400, air_temp_c:42,soil_temp_c:38,humidity_pct:30,mq135_ammonia:70, mq4_methane:220, mq7_co:15, mq2_smoke:25},
+  critical:{soil_moisture:20,tds_ppm:1600,air_temp_c:44,soil_temp_c:40,humidity_pct:20,mq135_ammonia:350,mq4_methane:1300,mq7_co:180, mq2_smoke:150}
 };
 
 function setScenario(name) {
@@ -409,6 +409,7 @@ async function loadStatus() {
 }
 
 // ── Chat ──────────────────────────────────────────────────────
+<<<<<<< Updated upstream
 // ── Complete AI Chat System ──────────────────────────────────
 let chatHistory = [];
 
@@ -498,6 +499,9 @@ function renderMarkdown(txt) {
   if (inList) html += '</ul>';
   return html;
 }
+=======
+const chatHistory = []; // last 4 turns: {role:'user'|'model', content}
+>>>>>>> Stashed changes
 
 function quickAsk(i) {
   const enQuestions = [
@@ -579,6 +583,7 @@ async function sendChat() {
         history: chatHistory,
         crop: currentCrop,
         stage: stEl ? stEl.value : 'germination',
+<<<<<<< Updated upstream
         sensors: currentSensors,
         lang: uiLang,
         api_key: storedKey
@@ -617,6 +622,20 @@ async function sendChat() {
       }
     }
   } catch(err) {
+=======
+        sensors: currentSensors, lang: uiLang,
+        history: chatHistory.slice(-4)})
+    });
+    const d = await r.json(); dot.remove();
+    const reply = d.reply || '...';
+    const bDiv = document.createElement('div');
+    bDiv.className = 'chat-msg bot'; bDiv.textContent = reply;
+    box.appendChild(bDiv); box.scrollTop = box.scrollHeight;
+    chatHistory.push({role:'user', content:msg});
+    chatHistory.push({role:'model', content:reply});
+    while (chatHistory.length > 4) chatHistory.shift();
+  } catch {
+>>>>>>> Stashed changes
     dot.remove();
     const eDiv = document.createElement('div');
     eDiv.className = 'chat-msg bot';
@@ -634,6 +653,24 @@ function sendWhatsApp() {
     ? `EcoSense எச்சரிக்கை!\nபயிர் ஆரோக்கியம்: ${sc}/100 (${hs})\nமண் ஈரப்பதம்: ${currentSensors.soil_moisture||'--'}%\n${lastResult.gas_alert?'🚨 வாயு எச்சரிக்கை!':''}`
     : `EcoSense Alert!\nCrop Health: ${sc}/100 (${hs})\nSoil Moisture: ${currentSensors.soil_moisture||'--'}%\n${lastResult.gas_alert?'🚨 Gas Alert!':''}`;
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ── Theme Management ──────────────────────────────────────────
+// Apply saved theme immediately before render to avoid flash
+(function applyInitialTheme() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.innerHTML = saved === 'dark' ? '🌙' : '☀️';
+})();
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.innerHTML = next === 'dark' ? '🌙' : '☀️';
 }
 
 // ── Boot ──────────────────────────────────────────────────────
