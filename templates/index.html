@@ -1,123 +1,125 @@
-<!DOCTYPE html><html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EcoSense</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EcoSense - Precision Agriculture Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
 
 <header class="topbar">
-  <div class="logo-wrap">
-    <span class="logo-icon">&#127807;</span>
-    <span class="logo-text">EcoSense</span>
-    <span class="logo-sub">Smart Crop Monitor</span>
+  <div class="brand">
+    <span class="brand-glyph">&#127807;</span>
+    <span class="brand-title">ECOSENSE</span>
+    <span class="brand-divider">/</span>
+    <span class="brand-sub">PRECISION AGRI DASHBOARD</span>
   </div>
-  <div class="topbar-right">
-    <button id="theme-btn" class="theme-btn" aria-label="Toggle Theme" onclick="toggleTheme()">
-      <span id="theme-icon">☀️</span>
-    </button>
-    <span id="esp32Status" class="esp32-badge esp32-off">&#128308; ESP32 Offline</span>
-    <span id="modeTag" class="mode-tag">&#127901;&#65039; SIM</span>
-    <button id="langToggleBtn" onclick="toggleUILang()" class="lang-btn">&#127470;&#127475; TA</button>
-    <span class="clock" id="clock">--:--:--</span>
+  <div class="topbar-actions">
+    <div class="crop-stage-group">
+      <label class="ctrl-label" for="cropSel" id="lbl-crop">CROP</label>
+      <select id="cropSel" class="ctrl-select" onchange="onCropChange()"></select>
+      <label class="ctrl-label" for="stageSel" id="lbl-stage">STAGE</label>
+      <select id="stageSel" class="ctrl-select" onchange="runPredict()"></select>
+    </div>
+    <div class="status-cluster">
+      <span id="esp32Status" class="tag-status tag-off">&#9679; ESP32 OFF</span>
+      <span id="modeTag" class="tag-mode">&#9654; SIM</span>
+      <button id="langToggleBtn" onclick="toggleUILang()" class="btn-tool" aria-label="Toggle Language">&#127470;&#127475; TA</button>
+      <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-tool" aria-label="Toggle Theme">&#9728;&#65039;</button>
+      <span class="clock-mono" id="clock">00:00:00</span>
+    </div>
   </div>
 </header>
 
-<div class="mode-bar">
-  <button id="btn-live" class="mode-btn" onclick="setMode('live')">&#128225; Live</button>
-  <button id="btn-sim"  class="mode-btn active-mode" onclick="setMode('sim')">&#127901;&#65039; Simulate</button>
-</div>
-
-<div class="simbar" id="simbar">
-  <span class="sim-label">&#127901;&#65039; SIMULATE:</span>
-  <div class="scenario-chips">
-    <button onclick="setScenario('normal')"   id="sc-normal">&#9989; Normal</button>
-    <button onclick="setScenario('dry')"      id="sc-dry">&#128293; Dry</button>
-    <button onclick="setScenario('saline')"   id="sc-saline">&#9888;&#65039; Saline</button>
-    <button onclick="setScenario('gas')"      id="sc-gas">&#128680; Gas Alert</button>
-    <button onclick="setScenario('heat')"     id="sc-heat">&#127777;&#65039; Heat</button>
-    <button onclick="setScenario('critical')" id="sc-critical">&#128128; Critical</button>
+<div class="simbar">
+  <div class="sim-controls">
+    <span class="sim-label">SIMULATOR CONTROLS</span>
+    <button class="sim-btn" onclick="applyPreset('optimal')">&#9656; Optimal</button>
+    <button class="sim-btn" onclick="applyPreset('drought')">&#9656; Drought</button>
+    <button class="sim-btn" onclick="applyPreset('saline')">&#9656; High TDS</button>
+    <button class="sim-btn" onclick="applyPreset('gas')">&#9656; Gas Alert</button>
+    <button class="sim-btn" onclick="applyPreset('heat')">&#9656; Heatwave</button>
+  </div>
+  <div class="mode-toggles">
+    <button id="btn-live" class="mode-btn" onclick="setMode('live')">&#9679; Live</button>
+    <button id="btn-sim" class="mode-btn active-mode" onclick="setMode('sim')">&#9679; Simulate</button>
   </div>
 </div>
 
 <main class="asym-grid">
-  <div class="left-stack">
-    <!-- ══ CENTRE — wide horizontal ("sleeping") panel ══ -->
-    <section class="card centre-card">
-      <div id="crop-tabs" class="crop-tabs"></div>
-      <div class="stage-row">
-        <label class="stage-label" for="stageSel">Stage:</label>
-        <select id="stageSel" class="stage-sel" onchange="runPredict()"></select>
-      </div>
-
-      <!-- Landscape row: gauge | advice | weather, side by side -->
-      <div class="centre-landscape">
-
-        <!-- Group 1: Crop face + Gauge -->
-        <div class="landscape-col landscape-col--gauge">
-          <div id="cropFace" class="crop-face">
-            <svg id="cropSvg" viewBox="0 0 80 80" width="60" height="60">
-              <ellipse cx="40" cy="42" rx="22" ry="22" fill="#1a2e1a" stroke="#2ecc71" stroke-width="2"/>
-              <circle id="eye-l" cx="33" cy="38" r="2.8" fill="#2ecc71"/>
-              <circle id="eye-r" cx="47" cy="38" r="2.8" fill="#2ecc71"/>
-              <path id="mouth" d="M33 43 Q40 50 47 43" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round"/>
-              <g id="sparkles"><text x="8" y="20" font-size="10">&#10024;</text><text x="58" y="20" font-size="10">&#10024;</text></g>
-              <line x1="40" y1="20" x2="40" y2="5" stroke="#2ecc71" stroke-width="2" stroke-linecap="round"/>
-              <ellipse cx="40" cy="4" rx="5" ry="3" fill="#2ecc71" opacity="0.7"/>
+  <!-- ══ LEFT COLUMN (Wide): Telemetry & Inference ══ -->
+  <div class="left-col">
+    <!-- Row 1: Crop Health Status & Gauge -->
+    <section class="card gauge-card">
+      <div class="gauge-split">
+        <div class="gauge-left">
+          <div class="panel-eyebrow">DIAGNOSTIC ENGINE</div>
+          <h2 class="panel-h2" id="pt-health">CROP HEALTH STATUS</h2>
+          <div id="healthTag" class="status-banner">-- --</div>
+          <div class="advice-block">
+            <div class="advice-lead" id="adviceTitle">AI FIELD ADVISORY</div>
+            <p id="adviceText" class="advice-body">System initializing...</p>
+          </div>
+          <div class="diag-meta">
+            <span class="meta-item"><span class="meta-k">CONFIDENCE:</span> <span class="meta-v" id="confText">--</span></span>
+            <span class="meta-item"><span class="meta-k">ENGINE:</span> <span class="meta-v" id="inferSource">--</span></span>
+          </div>
+        </div>
+        <div class="gauge-right">
+          <div class="gauge-box">
+            <svg viewBox="0 0 100 55" class="gauge-svg">
+              <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--bg-card-alt)" stroke-width="8" stroke-linecap="round"/>
+              <path id="gaugePath" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--accent-green)" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="126" stroke-dashoffset="126" style="transition:stroke-dashoffset 0.6s ease, stroke 0.3s ease;"/>
             </svg>
+            <div class="gauge-readout">
+              <span id="scoreText" class="gauge-val">--</span>
+              <span class="gauge-sub">HEALTH SCORE / 100</span>
+            </div>
           </div>
-          <div class="gauge-wrap">
-            <svg viewBox="0 0 120 70" width="170" aria-hidden="true">
-              <path d="M10 65 A55 55 0 0 1 110 65" fill="none" stroke="#1e3320" stroke-width="4" stroke-linecap="round"/>
-              <path id="gaugeNeedle" d="M60 65 L60 20" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90,60,65)"/>
-              <circle cx="60" cy="65" r="5" fill="#1a2e1a" stroke="#2ecc71" stroke-width="1.5"/>
-            </svg>
-            <div id="scoreText" class="gauge-score" aria-live="polite">--</div>
-            <div class="gauge-sub">HEALTH SCORE / 100</div>
-          </div>
-          <div id="healthTag" class="health-tag">-- --</div>
         </div>
-
-        <!-- Group 2: AI Advice -->
-        <div class="landscape-col landscape-col--advice">
-          <div class="advice-title" id="adviceTitle">&#129302; AI Field Advice</div>
-          <div id="adviceText" class="advice-text">Analyzing...</div>
-        </div>
-
-        <!-- Group 3: Weather + Actions -->
-        <div class="landscape-col landscape-col--weather">
-          <div class="panel-title" id="pt-weather">WEATHER</div>
-          <div id="weatherStrip" class="weather-strip">
-            <div id="weatherPill" class="weather-pill">&#127780;&#65039; Loading...</div>
-          </div>
-          <div id="forecastStrip" class="forecast-strip"></div>
-          <div id="confText" class="conf-text"></div>
-          <button id="waBtn" onclick="sendWhatsApp()" class="wa-btn">&#128242; WhatsApp</button>
-          <span id="aiBadge" class="ai-badge">&#10024; Gemini</span>
-        </div>
-
-<<<<<<< Updated upstream
-    <!-- Advice + weather below gauge -->
-    <div class="advice-title" id="adviceTitle">&#129302; AI Field Advice</div>
-    <div id="adviceText" class="advice-text">Analyzing...</div>
-    <div id="weatherNote" class="weather-note"></div>
-    <div id="confText" class="conf-text"></div>
-    <div id="weatherStrip" class="weather-strip">
-      <div id="weatherPill" class="weather-pill">&#127780;&#65039; Loading...</div>
-    </div>
-    <div id="forecastStrip" class="forecast-strip"></div>
-          </section>
-=======
       </div>
+      <div class="weather-strip" id="weatherStrip">
+        <span class="weather-pill" id="weatherPill">&#127780;&#65039; Loading weather...</span>
+        <span class="weather-note" id="weatherNote"></span>
+      </div>
+      <div class="forecast-strip" id="forecastStrip"></div>
     </section>
 
-    <!-- ══ LEFT — SENSOR READINGS ══ -->
+    <!-- Row 2: Live Sensors & Gas Readings -->
     <section class="card sensor-card">
-      <div class="panel-title" id="pt-sensor">LIVE SENSOR READINGS</div>
+      <div class="panel-eyebrow" id="pt-sensor">TELEMETRY INGEST</div>
       <div class="sensor-grid">
-        <div class="s-cell"><div class="s-top"><span class="s-icon">&#128167;</span><span class="s-label" id="lbl-moist">Soil Moisture</span></div><div class="s-val" id="v-moist">--%</div><div class="s-bar"><div class="s-fill" id="b-moist"></div></div></div>
-        <div class="s-cell"><div class="s-top"><span class="s-icon">&#129778;</span><span class="s-label" id="lbl-tds">Water TDS</span></div><div class="s-val" id="v-tds">-- ppm</div><div class="s-bar"><div class="s-fill" id="b-tds"></div></div></div>
-        <div class="s-cell"><div class="s-top"><span class="s-icon">&#127777;&#65039;</span><span class="s-label" id="lbl-airtemp">Air Temp</span></div><div class="s-val" id="v-air">--&#176;C</div><div class="s-bar"><div class="s-fill" id="b-air"></div></div></div>
-        <div class="s-cell"><div class="s-top"><span class="s-icon">&#128166;</span><span class="s-label" id="lbl-hum">Humidity</span></div><div class="s-val" id="v-hum">--%</div><div class="s-bar"><div class="s-fill" id="b-hum"></div></div></div>
-        <div class="s-cell"><div class="s-top"><span class="s-icon">&#127807;</span><span class="s-label" id="lbl-soiltemp">Soil Temp</span></div><div class="s-val" id="v-soiltemp">--&#176;C</div><div class="s-bar"><div class="s-fill" id="b-soiltemp"></div></div></div>
+        <div class="s-cell">
+          <div class="s-top"><span class="s-icon">&#128167;</span><span class="s-label" id="lbl-moist">Soil Moisture</span></div>
+          <div class="s-val" id="v-moist">--%</div>
+          <div class="s-bar"><div class="s-fill" id="b-moist"></div></div>
+        </div>
+        <div class="s-cell">
+          <div class="s-top"><span class="s-icon">&#129778;</span><span class="s-label" id="lbl-tds">Water TDS</span></div>
+          <div class="s-val" id="v-tds">-- ppm</div>
+          <div class="s-bar"><div class="s-fill" id="b-tds"></div></div>
+        </div>
+        <div class="s-cell">
+          <div class="s-top"><span class="s-icon">&#127777;&#65039;</span><span class="s-label" id="lbl-airtemp">Air Temp</span></div>
+          <div class="s-val" id="v-air">--&#176;C</div>
+          <div class="s-bar"><div class="s-fill" id="b-air"></div></div>
+        </div>
+        <div class="s-cell">
+          <div class="s-top"><span class="s-icon">&#128166;</span><span class="s-label" id="lbl-hum">Humidity</span></div>
+          <div class="s-val" id="v-hum">--%</div>
+          <div class="s-bar"><div class="s-fill" id="b-hum"></div></div>
+        </div>
+        <div class="s-cell">
+          <div class="s-top"><span class="s-icon">&#127807;</span><span class="s-label" id="lbl-soiltemp">Soil Temp</span></div>
+          <div class="s-val" id="v-soiltemp">--&#176;C</div>
+          <div class="s-bar"><div class="s-fill" id="b-soiltemp"></div></div>
+        </div>
       </div>
-      <div class="panel-title" id="pt-gas">GAS SENSORS</div>
+      <div class="panel-eyebrow" id="pt-gas">FIELD GAS SENSORS</div>
       <div class="gas-row">
         <span class="gas-pill">NH3 <b id="v-mq135">--</b></span>
         <span class="gas-pill">CH4 <b id="v-mq4">--</b></span>
@@ -136,25 +138,23 @@
       </div>
     </section>
   </div>
->>>>>>> Stashed changes
 
-  <!-- ══ RIGHT — CHATBOT ══ -->
+  <!-- ══ RIGHT COLUMN: EcoSense AI Companion ══ -->
   <section class="card chat-card">
     <div class="chat-head">
       <div class="chat-head-left">
         <span class="chat-head-title" id="chatHeadTitle">&#127807; EcoSense AI Companion</span>
         <span id="chatDot" class="chat-dot"></span>
-        <span id="chatSourceBadge" class="chat-source-badge">⚡ Checking AI...</span>
+        <span id="chatSourceBadge" class="chat-source-badge">&#9889; Checking AI...</span>
       </div>
       <div class="chat-head-actions">
-        <button id="apiKeyBtn" class="chat-action-btn" title="Configure Gemini API Key" onclick="openKeyModal()">🔑 Key</button>
-        <button id="clearChatBtn" class="chat-action-btn" title="Clear Conversation" onclick="clearChat()">🗑️</button>
+        <button id="clearChatBtn" class="chat-action-btn" title="Clear Conversation" onclick="clearChat()">&#128465;&#65039;</button>
       </div>
     </div>
     <div id="chatBox" class="chat-box">
       <div class="chat-msg bot">
         <div class="chat-msg-header"><span class="bot-badge">EcoSense Complete AI</span></div>
-        <div class="chat-msg-content" id="chatWelcome">&#128075; Hi! I am your complete AI Farming Companion. Ask me anything about crop diseases, fertilizers, irrigation, weather, or general questions! &#127807;</div>
+        <div class="chat-msg-content" id="chatWelcome">&#128075; Hi! I am your complete AI Farming Companion. Ask me anything about EcoSense, sensors, crop diseases, fertilizers, irrigation, weather, or general questions! &#127807;</div>
       </div>
     </div>
     <div class="quick-grid">
@@ -166,38 +166,14 @@
       <button onclick="quickAsk(5)">&#9881;&#65039; Pump & Gas?</button>
     </div>
     <div class="chat-input-row">
-<<<<<<< Updated upstream
       <input id="chatInput" class="chat-input" placeholder="Ask about your farm, fertilizers, pests, or anything..."
              onkeydown="if(event.key==='Enter')sendChat()">
       <button class="chat-send" onclick="sendChat()" title="Send">&#10148;</button>
     </div>
     <div id="chatStatus" class="chat-status"></div>
   </section>
-
-  <!-- Gemini Key Configuration Modal -->
-  <div id="keyModal" class="key-modal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3>🔑 Gemini AI Configuration</h3>
-        <button class="modal-close" onclick="closeKeyModal()">&times;</button>
-      </div>
-      <p class="modal-desc">Enter your Google Gemini API key to enable live generative AI across any topic. Without a key, EcoSense operates using its built-in offline agricultural knowledge engine.</p>
-      <input type="password" id="geminiKeyInput" class="modal-input" placeholder="AIzaSy..." />
-      <div class="modal-buttons">
-        <button class="btn-secondary" onclick="closeKeyModal()">Cancel</button>
-        <button class="btn-primary" onclick="saveApiKey()">Save Key</button>
-      </div>
-    </div>
-  </div>
-
-=======
-      <input id="chatInput" class="chat-input" placeholder="Ask about your farm..."
-              onkeydown="if(event.key==='Enter')sendChat()">
-      <button class="chat-send" onclick="sendChat()" aria-label="Send">&#10148;</button>
-    </div>
-    <div id="chatStatus" class="chat-status"></div>
-  </section>
->>>>>>> Stashed changes
 </main>
+
 <script src="/static/script.js"></script>
-</body></html>
+</body>
+</html>

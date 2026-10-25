@@ -310,6 +310,38 @@ def query_knowledge_base(
     max_tds = crop_cfg.get("tds_max", 800)
     opt_moist = crop_cfg.get("moist_opt", 75)
     min_moist = crop_cfg.get("moist_min", 60)
+    # 0. EcoSense Project, IoT Hardware & Sensor Queries
+    if any(k in q for k in ['ecosense', 'project', 'about this', 'hardware', 'esp32', 'sensor', 'iot', 'system', 'architecture', 'சென்சார்', 'திட்டம்']):
+        if is_ta:
+            return (
+                "🌱 **EcoSense ஸ்மார்ட் விவசாய திட்டத்தின் கண்ணோட்டம் (EcoSense Project Overview)**\n\n"
+                "**EcoSense** என்பது ESP32 IoT சாதனம் மற்றும் செயற்கை நுண்ணறிவு (AI/ML) இணைந்த நவீன துல்லிய விவசாய தளமாகும்.\n\n"
+                "📡 **பயன்படுத்தப்படும் IoT சென்சார்கள் (Sensors Used):**\n"
+                "- **ESP32 Microcontroller**: நிகழ்நேர வைஃபை மூலம் சென்சார் தரவுகளை சர்வரருக்கு அனுப்புகிறது.\n"
+                "- **மண் ஈரப்பத சென்சார் (Capacitive Soil Moisture v1.2)**: வேர்ப்பகுதியில் உள்ள ஈரப்பதத்தை துல்லியமாக கணக்கிடுகிறது.\n"
+                "- **TDS சென்சார் (Water Salinity)**: பாசன நீரின் உவர்தன்மையை (ppm) அளவிடுகிறது.\n"
+                "- **வெப்பநிலை மற்றும் ஈரப்பத சென்சார் (DHT22 / DS18B20)**: காற்று மற்றும் மண் வெப்பநிலையைக் கண்காணிக்கிறது.\n"
+                "- **MQ வாயு சென்சார்கள்**: MQ-135 (அம்மோனியா), MQ-4 (மீத்தேன்), MQ-7 (கார்பன் மோனாக்சைடு), MQ-2 (புகை).\n\n"
+                "🤖 **செயற்கை நுண்ணறிவு & பாதுகாப்பு பூட்டு (AI & Safety Lock):**\n"
+                "- 4 பிரத்யேக இயந்திர கற்றல் (ML) மாதிரிகள் மூலம் பயிர் ஆரோக்கியம், பாசன தேவை மற்றும் வாயு அபாய எச்சரிக்கைகள் கணிக்கப்படுகின்றன.\n"
+                "- நீர் உவர்தன்மை அதிகமானால் பயிர் வேர் அழுகலைத் தடுக்க பம்ப் தானாகவே பூட்டப்படும் (Automatic Pump Lock)."
+            )
+        else:
+            return (
+                "🌱 **EcoSense Smart Precision Agriculture System Overview**\n\n"
+                "**EcoSense** is an autonomous IoT and Machine Learning platform engineered to optimize crop yield, soil health, and precision irrigation.\n\n"
+                "📡 **IoT Hardware & Sensors Architecture:**\n"
+                "- **ESP32 Microcontroller**: High-speed telemetry reporting live soil and environmental metrics to the server via Wi-Fi.\n"
+                "- **Capacitive Soil Moisture Sensor v1.2**: Corrosion-resistant analog probe monitoring moisture percentage in the root zone.\n"
+                "- **TDS (Total Dissolved Solids) Sensor**: Measures irrigation water salinity in ppm to prevent root toxicity.\n"
+                "- **Temperature & Humidity Probes**: Monitors ambient micro-climate and root-zone soil temperature.\n"
+                "- **MQ Hazardous Gas Sensor Array**: MQ-135 (Ammonia/Air quality), MQ-4 (Methane), MQ-7 (Carbon Monoxide), and MQ-2 (Smoke).\n\n"
+                "🤖 **AI & ML Decision Engine:**\n"
+                "- 4 Scikit-learn ML models predicting crop health status, irrigation triggers, gas alerts, and safety interlocks.\n"
+                "- Automatic safety pump lockout when salinity exceeds crop thresholds or hazardous gas spikes are detected.\n"
+                "- Dynamic weather forecast integration (OpenWeatherMap) to prevent irrigation before rainfall."
+            )
+
 
     # 1. Check Specific Diseases & Pests FIRST (avoid accidental substring matches)
     for pest_key, data in DISEASE_PEST_DB.items():
@@ -433,7 +465,7 @@ def query_knowledge_base(
             f"- **பயிர்**: {cta} (பருவம்: {stage})\n"
             f"- **கள நிலவரம்**: ஈரப்பதம் {moist:.0f}%, TDS {tds:.0f} ppm, வெப்பநிலை {temp:.1f}°C.\n\n"
             f"நீங்கள் என்னிடம் பாசனம், உர அட்டவணை, பூச்சி/நோய் தடுப்பு, மண் உப்புத்தன்மை மற்றும் வானிலை குறித்து கேட்கலாம்!\n\n"
-            f"💡 *(முழுமையான திறந்தவெளி செயற்கை நுண்ணறிவை (Complete AI) இயக்க, தயவுசெய்து உங்கள் Google Gemini API Key ஐ Chat தலைப்பில் உள்ள '🔑 Key' பொத்தானில் இணைக்கவும்.)*"
+            f"💡 *(முழுமையான திறந்தவெளி செயற்கை நுண்ணறிவை (Complete AI) இயக்க, தயவுசெய்து உங்கள் Google Gemini API Key ஐ சுற்றுச்சூழல் மாறியில் GEMINI_API_KEY அமைக்கப்பட்டுள்ளதை உறுதிசெய்யவும்.)*"
         )
     else:
         return (
@@ -442,5 +474,5 @@ def query_knowledge_base(
             f"- **Crop**: {cta} (Growth Stage: {stage})\n"
             f"- **Live Conditions**: Soil Moisture {moist:.0f}%, TDS {tds:.0f} ppm, Temp {temp:.1f}°C.\n\n"
             f"You can ask me about irrigation timing, fertilizer schedules (NPK), pest/disease treatments, and water salinity!\n\n"
-            f"💡 *(Tip: To unlock full general reasoning across any question, configure your Google Gemini API Key via the '🔑 Key' button in the chat header.)*"
+            f"💡 *(Tip: To unlock full general reasoning across any question, powered by EcoSense Server-Side AI with Google Gemini.)*"
         )

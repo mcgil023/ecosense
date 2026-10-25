@@ -37,14 +37,17 @@ _active_model_name = None
 
 def get_api_key() -> str:
     global _active_key
-    if not _active_key:
-        _active_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    return _active_key
+    if _active_key:
+        return _active_key
+    return os.environ.get("GEMINI_API_KEY", "").strip()
 
 def set_api_key(key: str) -> None:
     global _active_key
     _active_key = (key or "").strip()
-    os.environ["GEMINI_API_KEY"] = _active_key
+    if _active_key:
+        os.environ["GEMINI_API_KEY"] = _active_key
+    elif "GEMINI_API_KEY" in os.environ:
+        del os.environ["GEMINI_API_KEY"]
 
 def is_gemini_available() -> bool:
     return bool(get_api_key())
