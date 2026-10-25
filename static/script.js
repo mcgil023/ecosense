@@ -144,9 +144,7 @@ function renderPredictions(p) {
 
   const adv = gid('adviceText'), conf = gid('confText'), src = gid('inferSource');
   if (adv) {
-    const irrMsg = p.irrigate_now ? 'Irrigation recommended. ' : 'Moisture adequate. ';
-    const lockMsg = p.pump_locked ? '⚠️ Pump locked due to safety interlock. ' : '';
-    adv.textContent = lockMsg + irrMsg + (p.weather_note || '');
+    adv.textContent = p.advisory || (p.irrigate_now ? 'Irrigation recommended immediately.' : 'Soil moisture adequate.');
   }
   if (conf) conf.textContent = (p.confidence_pct || 90) + '%';
   if (src) src.textContent = (p.inference_source || 'hybrid').toUpperCase();
@@ -288,7 +286,8 @@ async function sendChat() {
         crop: currentCrop,
         stage: sSel ? sSel.value : 'germination',
         sensors: currentSensors,
-        lang: uiLang
+        lang: uiLang,
+        mode: MODE
       })
     });
     const data = await res.json();

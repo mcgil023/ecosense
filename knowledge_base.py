@@ -213,84 +213,42 @@ def get_salinity_guide(tds: float, max_tds: float, crop: str, lang: str) -> str:
     if tds > max_tds:
         if is_ta:
             return (
-                f"🚨 **உயர் TDS உப்புத்தன்மை எச்சரிக்கை!**\n"
-                f"- **தற்போதைய TDS**: {tds:.0f} ppm ({cta} பயிருக்கு அனுமதிக்கப்பட்ட உச்ச வரம்பு: {max_tds:.0f} ppm).\n"
-                f"- **பாதிப்பு**: அதிக உப்பு வேர்களில் சவ்வூடுபரவல் அழுத்தத்தை (Osmotic Stress) உண்டாக்கி பயிரை கருக வைக்கும்.\n"
-                f"- **தீர்வுகள்**:\n"
-                f"  1. பம்ப் தானாக பூட்டப்பட்டுள்ளது. நன்னீர் கிடைக்கும் வரை இந்த நீரைப் பாய்ச்ச வேண்டாம்.\n"
-                f"  2. நிலத்தில் ஏக்கருக்கு 200-500 கிலோ ஜிப்சம் இட்டு நிலத்தடி உப்பைக் குறைக்கவும்.\n"
-                f"  3. மழை நீர் சேகரிப்பு அல்லது சுத்தமான நீருடன் கலந்து (Dilution) பாய்ச்சவும்.\n"
-                f"  4. சொட்டு நீர் பாசனத்தில் அமில சிகிச்சை (Acid treatment) மூலம் உப்புகளைக் கரைக்கலாம்."
+                f"⚠️ **பாசன நீர் தற்போது பாதுகாப்பாக இல்லை.** தண்ணீரில் உப்புத்தன்மை (TDS) {cta} பயிருக்கான உகந்த அளவை விட அதிகமாக உள்ளது. "
+                "இது பயிரின் வேர்களை எரித்து வளர்ச்சியைப் பாதிக்கும் என்பதால் நல்ல நீருடன் கலந்து பயன்படுத்தவும் அல்லது ஜிப்சம் இட்டு உவர்த்தன்மையை குறைக்கவும்."
             )
         else:
             return (
-                f"🚨 **High Salinity & TDS Warning!**\n"
-                f"- **Current TDS**: {tds:.0f} ppm (Exceeds maximum safe limit of {max_tds:.0f} ppm for {cta}).\n"
-                f"- **Crop Impact**: High salt concentration causes root osmotic shock and leaf tip scorching.\n"
-                f"- **Remediation Steps**:\n"
-                f"  1. Irrigation pump is locked to safeguard roots. Avoid pumping saline borehole water.\n"
-                f"  2. Apply Gypsum @ 200-500 kg/acre to displace excess sodium ions from root zone.\n"
-                f"  3. Dilute saline source with harvested rainwater where possible.\n"
-                f"  4. Increase drainage channels to leach accumulated salts after irrigation."
+                f"⚠️ **The water is not safe for irrigation right now.** Salinity (TDS) exceeds the safe limit for {cta}. "
+                "Pumping this water will burn the roots and cause osmotic stress. Please dilute the water source with fresh rainwater or treat it before irrigating."
             )
     else:
         if is_ta:
-            return (
-                f"✅ **நீர் தரம் பாதுகாப்பானது**\n"
-                f"- **தற்போதைய TDS**: {tds:.0f} ppm (வரம்பு: <{max_tds:.0f} ppm).\n"
-                f"- உப்பின் அளவு {cta} பயிரின் வேர்களுக்கு உகந்த வரம்பில் உள்ளது. பாசனத்திற்கு தாராளமாகப் பயன்படுத்தலாம்."
-            )
+            return f"✅ **பாசன நீர் பாதுகாப்பாக உள்ளது.** நீரின் உப்புத்தன்மை {cta} பயிரின் பாதுகாப்பான வரம்பிற்குள் உள்ளது. தாராளமாக பாசனம் செய்யலாம்."
         else:
-            return (
-                f"✅ **Water Quality is Safe & Optimal**\n"
-                f"- **Current TDS**: {tds:.0f} ppm (Well within safe limit of {max_tds:.0f} ppm for {cta}).\n"
-                f"- Salt levels pose no risk to root osmotic absorption. Safe for regular irrigation."
-            )
+            return f"✅ **The water is safe for irrigation!** Salinity (TDS) is well within the healthy limit for {cta}."
 
-# 4. Gas & Air Quality Safety Assessment
+
 def get_gas_safety_guide(sensors: Dict[str, Any], lang: str) -> str:
     is_ta = (lang == "ta")
     nh3 = float(sensors.get("mq135_ammonia", 0))
     ch4 = float(sensors.get("mq4_methane", 0))
     co = float(sensors.get("mq7_co", 0))
-    is_gas_alert = (nh3 > 200 or ch4 > 1000 or co > 100)
+    smoke = float(sensors.get("mq2_smoke", 0))
     
-    if is_gas_alert:
+    has_hazard = (nh3 > 100 or ch4 > 500 or co > 35 or smoke > 80)
+    
+    if has_hazard:
         if is_ta:
-            return (
-                f"⚠️ **அபாயகரமான வாயு எச்சரிக்கை (Field Gas Alert)!**\n"
-                f"- **அளவீடுகள்**: NH3 (அம்மோனியா): {nh3:.0f} ppm | CH4 (மீத்தேன்): {ch4:.0f} ppm | CO (கார்பன் மோனாக்சைடு): {co:.0f} ppm.\n"
-                f"- **காரணங்கள்**: அதிக நீர் தேங்கி அழுகிய கரிமப் பொருட்கள், சாணக் கழிவு வாயுக்கள், அல்லது வயல் எரிப்பு.\n"
-                f"- **பாதுகாப்பு வழிகாட்டல்**:\n"
-                f"  1. விவசாயப் பணியாளர்கள் உடனடியாக அப்பகுதியிலிருந்து தற்காலிகமாக வெளியேறவும்.\n"
-                f"  2. பாசன பம்ப் உடனடியாக பூட்டப்பட்டுள்ளது (மின்னணு தீப்பொறி அபாயத்தைத் தடுக்க).\n"
-                f"  3. வயலில் தேங்கியுள்ள கழிவுநீரை வடித்து காற்றோட்டம் ஏற்படுத்தவும்."
-            )
+            return "⚠️ **எச்சரிக்கை: வயலில் வாயு அபாயம் உள்ளது!** அம்மோனியா அல்லது மீத்தேன் வாயு அதிகரித்துள்ளது. பாதுகாப்புக்காக பம்ப் பூட்டப்பட்டுள்ளது. வயலில் காற்றோட்டத்தை சரிசெய்யவும்."
         else:
-            return (
-                f"⚠️ **Hazardous Field Gas Alert!**\n"
-                f"- **Readings**: NH3: {nh3:.0f} ppm | CH4: {ch4:.0f} ppm | CO: {co:.0f} ppm.\n"
-                f"- **Causes**: Anaerobic rotting in stagnant water, slurry accumulation, or nearby biomass burning.\n"
-                f"- **Action Protocol**:\n"
-                f"  1. Farm workers must vacate the sensor zone until ventilation improves.\n"
-                f"  2. Irrigation pump is locked to eliminate any spark hazards.\n"
-                f"  3. Aerate stagnant trenches and clear rotting organic sludge."
-            )
+            return "⚠️ **Warning: Hazardous gas spikes detected in the field!** Elevated Ammonia or Methane levels can harm crop roots. The irrigation pump is locked for safety. Please check compost areas and field aeration."
     else:
         if is_ta:
-            return (
-                f"🍃 **வயல்வெளி காற்று தரம் சிறப்பானது**\n"
-                f"- அம்மோனியா (NH3): {nh3:.0f} ppm | மீத்தேன் (CH4): {ch4:.0f} ppm | கார்பன் மோனாக்சைடு (CO): {co:.0f} ppm.\n"
-                f"- நச்சு வாயுக்கள் எதுவும் இல்லை. பண்ணை சுற்றுச்சூழல் ஆரோக்கியமாக உள்ளது."
-            )
+            return "✅ **வயலில் காற்றுத்தரம் சீராகவும் பாதுகாப்பாகவும் உள்ளது.** தீங்கு விளைவிக்கும் வாயுக்கள் ஏதுமில்லை."
         else:
-            return (
-                f"🍃 **Field Air Quality is Safe & Healthy**\n"
-                f"- NH3: {nh3:.0f} ppm | CH4: {ch4:.0f} ppm | CO: {co:.0f} ppm.\n"
-                f"- No toxic gas accumulation detected. Safe working environment."
-            )
+            return "✅ **Air quality around the field is safe and normal.** Gas levels are well within healthy limits."
 
-# 5. Core Offline Engine Matcher
+
 def query_knowledge_base(
     query: str,
     crop: str,
@@ -304,175 +262,127 @@ def query_knowledge_base(
     is_ta = (lang == "ta")
     moist = float(sensors.get("soil_moisture", 0))
     tds = float(sensors.get("tds_ppm", 0))
-    temp = float(sensors.get("air_temp_c", 0))
-    hum = float(sensors.get("humidity_pct", 0))
     cta = CROP_NAMES.get(crop, {}).get("ta", crop) if is_ta else CROP_NAMES.get(crop, {}).get("en", crop)
     max_tds = crop_cfg.get("tds_max", 800)
-    opt_moist = crop_cfg.get("moist_opt", 75)
     min_moist = crop_cfg.get("moist_min", 60)
-    # 0. EcoSense Project, IoT Hardware & Sensor Queries
-    if any(k in q for k in ['ecosense', 'project', 'about this', 'hardware', 'esp32', 'sensor', 'iot', 'system', 'architecture', 'சென்சார்', 'திட்டம்']):
+    
+    is_drought = (moist < min_moist) or bool(pred_result.get("is_drought")) or (moist < 40)
+    pump_locked = bool(pred_result.get("pump_locked"))
+    gas_alert = bool(pred_result.get("gas_alert"))
+    tds_safe = bool(pred_result.get("tds_safe", tds <= max_tds))
+    irrigate_now = bool(pred_result.get("irrigate_now")) or is_drought
+
+    # 1. Project & Hardware Queries
+    if any(k in q for k in ["ecosense", "project", "hardware", "esp32", "sensor", "iot", "architecture", "திட்டம்", "சென்சார்"]):
         if is_ta:
             return (
-                "🌱 **EcoSense ஸ்மார்ட் விவசாய திட்டத்தின் கண்ணோட்டம் (EcoSense Project Overview)**\n\n"
-                "**EcoSense** என்பது ESP32 IoT சாதனம் மற்றும் செயற்கை நுண்ணறிவு (AI/ML) இணைந்த நவீன துல்லிய விவசாய தளமாகும்.\n\n"
-                "📡 **பயன்படுத்தப்படும் IoT சென்சார்கள் (Sensors Used):**\n"
-                "- **ESP32 Microcontroller**: நிகழ்நேர வைஃபை மூலம் சென்சார் தரவுகளை சர்வரருக்கு அனுப்புகிறது.\n"
-                "- **மண் ஈரப்பத சென்சார் (Capacitive Soil Moisture v1.2)**: வேர்ப்பகுதியில் உள்ள ஈரப்பதத்தை துல்லியமாக கணக்கிடுகிறது.\n"
-                "- **TDS சென்சார் (Water Salinity)**: பாசன நீரின் உவர்தன்மையை (ppm) அளவிடுகிறது.\n"
-                "- **வெப்பநிலை மற்றும் ஈரப்பத சென்சார் (DHT22 / DS18B20)**: காற்று மற்றும் மண் வெப்பநிலையைக் கண்காணிக்கிறது.\n"
-                "- **MQ வாயு சென்சார்கள்**: MQ-135 (அம்மோனியா), MQ-4 (மீத்தேன்), MQ-7 (கார்பன் மோனாக்சைடு), MQ-2 (புகை).\n\n"
-                "🤖 **செயற்கை நுண்ணறிவு & பாதுகாப்பு பூட்டு (AI & Safety Lock):**\n"
-                "- 4 பிரத்யேக இயந்திர கற்றல் (ML) மாதிரிகள் மூலம் பயிர் ஆரோக்கியம், பாசன தேவை மற்றும் வாயு அபாய எச்சரிக்கைகள் கணிக்கப்படுகின்றன.\n"
-                "- நீர் உவர்தன்மை அதிகமானால் பயிர் வேர் அழுகலைத் தடுக்க பம்ப் தானாகவே பூட்டப்படும் (Automatic Pump Lock)."
+                "🌱 **EcoSense** என்பது ESP32 IoT சாதனம் மற்றும் AI/ML மூலம் பாசனத்தை தானியங்கி முறையில் கட்டுப்படுத்தி "
+                "பயிர்களைப் பாதுகாக்கும் நவீன ஸ்மார்ட் விவசாய அமைப்பாகும். இதில் மண் ஈரப்பதம், நீரின் உப்புத்தன்மை (TDS) "
+                "மற்றும் வாயு சென்சார்கள் இணைக்கப்பட்டுள்ளன."
             )
         else:
             return (
-                "🌱 **EcoSense Smart Precision Agriculture System Overview**\n\n"
-                "**EcoSense** is an autonomous IoT and Machine Learning platform engineered to optimize crop yield, soil health, and precision irrigation.\n\n"
-                "📡 **IoT Hardware & Sensors Architecture:**\n"
-                "- **ESP32 Microcontroller**: High-speed telemetry reporting live soil and environmental metrics to the server via Wi-Fi.\n"
-                "- **Capacitive Soil Moisture Sensor v1.2**: Corrosion-resistant analog probe monitoring moisture percentage in the root zone.\n"
-                "- **TDS (Total Dissolved Solids) Sensor**: Measures irrigation water salinity in ppm to prevent root toxicity.\n"
-                "- **Temperature & Humidity Probes**: Monitors ambient micro-climate and root-zone soil temperature.\n"
-                "- **MQ Hazardous Gas Sensor Array**: MQ-135 (Ammonia/Air quality), MQ-4 (Methane), MQ-7 (Carbon Monoxide), and MQ-2 (Smoke).\n\n"
-                "🤖 **AI & ML Decision Engine:**\n"
-                "- 4 Scikit-learn ML models predicting crop health status, irrigation triggers, gas alerts, and safety interlocks.\n"
-                "- Automatic safety pump lockout when salinity exceeds crop thresholds or hazardous gas spikes are detected.\n"
-                "- Dynamic weather forecast integration (OpenWeatherMap) to prevent irrigation before rainfall."
+                "🌱 **EcoSense** is an autonomous precision agriculture system. It connects an ESP32 microcontroller with "
+                "capacitive soil moisture, water salinity (TDS), and gas sensors to machine learning models, automating irrigation "
+                "and locking pumps during salinity or gas hazards."
             )
 
-
-    # 1. Check Specific Diseases & Pests FIRST (avoid accidental substring matches)
+    # 2. Specific Diseases & Pests FIRST
     for pest_key, data in DISEASE_PEST_DB.items():
         if any(kw in q for kw in data["keywords"]):
             return data["ta" if is_ta else "en"]
 
-    # 2. Water Quality & Salinity
-    if any(k in q for k in ["tds", "salin", "salt", "water safe", "water quality", "நீர் தரம்", "உப்பு"]):
+    # 3. Water Quality & Salinity
+    if any(k in q for k in ["tds", "salin", "salt", "water safe", "water quality", "உப்புத்தன்மை", "உவர்நீர்"]):
         return get_salinity_guide(tds, max_tds, crop, lang)
 
-    # 3. Irrigation & Pump status
-    if any(k in q for k in ["irrigat", "pump", "water", "பாசன", "நீர்", "பம்ப்"]):
-        if pred_result.get("pump_locked"):
-            reason_en = "High Salinity (TDS)" if not pred_result.get("tds_safe") else "Gas Alert" if pred_result.get("gas_alert") else "Critical Crop Stress"
-            reason_ta = "அதிக உப்புத்தன்மை (TDS)" if not pred_result.get("tds_safe") else "வாயு கசிவு எச்சரிக்கை" if pred_result.get("gas_alert") else "கடுமையான பயிர் அழுத்தம்"
+    # 4. Irrigation & Pump status (CRITICAL: Simple, truthful, drought-aware)
+    if any(k in q for k in ["irrigat", "pump", "water", "பாசனம்", "தண்ணீர்", "பம்ப்"]):
+        if pump_locked:
+            reason_en = "High Water Salinity (TDS)" if not tds_safe else "Gas Hazard" if gas_alert else "Safety Lock"
+            reason_ta = "அதிக உவர்தன்மை (TDS)" if not tds_safe else "வாயு அபாயம்" if gas_alert else "பாதுகாப்பு பூட்டு"
             if is_ta:
                 return (
-                    f"🛑 **பம்ப் தானாகப் பூட்டப்பட்டுள்ளது (Pump Locked)!**\n"
-                    f"- **காரணம்**: {reason_ta}.\n"
-                    f"- **மண் ஈரப்பதம்**: {moist:.0f}% (தேவை: {min_moist}%).\n"
-                    f"- பயிரின் வேர்கள் சேதமடையாமல் இருக்க பம்ப் பாதுகாப்பு முறையில் வைக்கப்பட்டுள்ளது."
+                    f"🛑 **இல்லை, இப்போது பாசனம் செய்ய வேண்டாம்.** {reason_ta} காரணமாக பம்ப் தானாக பூட்டப்பட்டுள்ளது. "
+                    "பயிரின் வேர்கள் சேதமடைவதைத் தடுக்க நீரின் தரத்தை சரிசெய்த பின் பாசனம் செய்யவும்."
                 )
             else:
                 return (
-                    f"🛑 **Irrigation Pump is Automatically Locked!**\n"
-                    f"- **Reason**: {reason_en}.\n"
-                    f"- **Soil Moisture**: {moist:.0f}% (Optimal: {opt_moist}%).\n"
-                    f"- Safety interlock prevents pumping damaged water into {cta} root zone."
+                    f"🛑 **No, do not irrigate right now.** The irrigation pump is locked due to {reason_en}. "
+                    f"Safety interlocks protect your {cta} roots from toxic water or hazards. Please resolve the issue before watering."
                 )
-        if pred_result.get("irrigate_now"):
+        elif is_drought or irrigate_now:
             if is_ta:
                 return (
-                    f"💧 **இப்போது பாசனம் செய்யவும் (Irrigate Now)!**\n"
-                    f"- **தற்போதைய ஈரப்பதம்**: {moist:.0f}% (பரிந்துரை: {opt_moist}%, குறைந்தபட்சம்: {min_moist}%).\n"
-                    f"- பயிர் பருவம்: **{stage}** — நீர் பற்றாக்குறை வளர்ச்சி மற்றும் விளைச்சலைப் பாதிக்கும்."
+                    f"💧 **ஆம், உடனடியாக பாசனம் செய்யவும்!** மண்ணில் ஈரப்பதம் மிகவும் குறைவாக உள்ளது ({cta} பயிருக்கு வறட்சி அழுத்தம் ஏற்பட்டுள்ளது). "
+                    "இப்போது தண்ணீர் பாய்ச்சுவது பயிரை வறட்சியிலிருந்து காப்பாற்றும்."
                 )
             else:
                 return (
-                    f"💧 **Irrigation Recommended Now!**\n"
-                    f"- **Current Moisture**: {moist:.0f}% (Target: {opt_moist}%, Minimum: {min_moist}%).\n"
-                    f"- Growth Stage: **{stage}** — moisture stress at this stage will reduce yield."
+                    f"💧 **Yes, irrigate your farm right away!** The soil is in drought and critically dry for your {cta} crops. "
+                    "Turning on the water now will rehydrate the roots and prevent yield loss."
                 )
+        elif moist > 88:
+            if is_ta:
+                return f"🌿 **பாசனம் தேவையில்லை.** வயலில் ஏற்கனவே நீர் அதிகமாக உள்ளது. வேர் அழுகலைத் தடுக்க அதிகப்படியான தண்ணீரை வடிய வைக்கவும்."
+            else:
+                return f"🌿 **No irrigation needed.** The soil already has excess moisture. Ensure proper drainage to avoid root rot."
         else:
             if is_ta:
-                return (
-                    f"🌿 **தற்போது பாசனம் தேவையில்லை**\n"
-                    f"- மண் ஈரப்பதம்: **{moist:.0f}%** போதுமான அளவில் உள்ளது (உகந்தது: {opt_moist}%).\n"
-                    f"- அதிகப்படியான நீர் தேங்குவதைத் தவிர்க்கவும்."
-                )
+                return f"🌿 **இப்போது பாசனம் தேவையில்லை.** மண்ணில் தேவையான ஈரப்பதம் சீராக உள்ளது. பம்பை நிறுத்தி வைப்பது நல்லது."
             else:
-                return (
-                    f"🌿 **No Irrigation Needed at Present**\n"
-                    f"- Soil moisture is healthy at **{moist:.0f}%** (Optimal: {opt_moist}%).\n"
-                    f"- Prevents waterlogging and root rot."
-                )
+                return f"🌿 **No need to water right now.** The soil has plenty of healthy moisture, so keeping the pump off will protect root health and save water."
 
-    # 4. Gas / Air Quality
+    # 5. Gas / Air Quality
     if any(k in q for k in ["gas", "ammonia", "methane", "air quality", "air safe", "aqi", "காற்று", "வாயு"]):
         return get_gas_safety_guide(sensors, lang)
 
-    # 5. Fertilizers & Nutrients
+    # 6. Fertilizers & Nutrients
     if any(k in q for k in ["fertiliz", "urea", "dap", "potash", "npk", "manure", "உரம்", "சாணம்", "ஊட்டச்சத்து", "யூரியா"]):
         guide = FERTILIZER_GUIDE.get(crop, FERTILIZER_GUIDE["rice"])
         return guide.get("ta" if is_ta else "en", "")
 
-    # 6. General pest/disease question
+    # 7. General pest/disease question
     if any(k in q for k in ["pest", "disease", "insect", "bug", "worm", "பூச்சி", "நோய்"]):
         matched_entries = [d["ta" if is_ta else "en"] for d in DISEASE_PEST_DB.values() if crop in d["crops"]]
         if matched_entries:
-            header = f"🐛 **{cta} பயிருக்கான முக்கிய பூச்சி மற்றும் நோய் மேலாண்மை:**\n\n" if is_ta else f"🐛 **Key Pest & Disease Management for {cta}:**\n\n"
+            header = f"🐛 **{cta} பயிருக்கான முக்கிய பூச்சி மற்றும் நோய் பாதுகாப்பு:**\n\n" if is_ta else f"🐛 **Key Pest & Disease Management for {cta}:**\n\n"
             return header + "\n\n".join(matched_entries[:2])
 
-    # 7. Overall Health & Diagnostics
+    # 8. Overall Health & Diagnostics
     if any(k in q for k in ["health", "score", "status", "condition", "ஆரோக்கிய", "நிலைமை"]):
         hs = pred_result.get("health_status", "GOOD")
-        sc = pred_result.get("health_score", 85)
-        aqi_label = pred_result.get("field_aqi_label", "Good")
-        if is_ta:
-            return (
-                f"📊 **{cta} பயிர் ஆரோக்கிய சுருக்கம்**\n"
-                f"- **ஆரோக்கிய மதிப்பெண்**: {sc}/100 ({hs})\n"
-                f"- **பருவம்**: {stage}\n"
-                f"- **மண் ஈரப்பதம்**: {moist:.0f}% | **மண் TDS**: {tds:.0f} ppm\n"
-                f"- **வெப்பநிலை**: {temp:.1f}°C | **ஈரப்பதம்**: {hum:.0f}%\n"
-                f"- **சுற்றுச்சூழல் AQI**: {aqi_label}"
-            )
+        if hs == "CRITICAL" or is_drought:
+            if is_ta:
+                return f"🚨 **{cta} பயிர் தீவிர வறட்சி அழுத்தத்தில் உள்ளது!** வாடுவதைத் தடுக்க உடனடியாக தண்ணீர் பாய்ச்சவும்."
+            else:
+                return f"🚨 **Your {cta} crops are experiencing severe drought stress right now!** Immediate irrigation is recommended to prevent leaf wilting and yield damage."
+        elif hs == "POOR":
+            if is_ta:
+                return f"⚠️ **பயிரின் நிலை சற்று பலவீனமாக உள்ளது.** மண் ஈரப்பதத்தை கவனித்து உரிய பாசனம் அளிக்கவும்."
+            else:
+                return f"⚠️ **Your {cta} crop condition is poor.** Check moisture and field conditions today to help your crops recover."
+        elif hs == "MODERATE":
+            if is_ta:
+                return f"🌱 **பயிர் நிலை சுமாராக உள்ளது.** வழக்கமான பாசனம் மற்றும் உரமிடுதலைத் தொடரவும்."
+            else:
+                return f"🌱 **Your {cta} crop condition is moderate.** Maintain regular watering and nutrient schedules."
         else:
-            return (
-                f"📊 **{cta} Crop Health Diagnostic Summary**\n"
-                f"- **Health Score**: {sc}/100 ({hs})\n"
-                f"- **Current Stage**: {stage}\n"
-                f"- **Soil Moisture**: {moist:.0f}% | **Salinity (TDS)**: {tds:.0f} ppm\n"
-                f"- **Temperature**: {temp:.1f}°C | **Air Humidity**: {hum:.0f}%\n"
-                f"- **Field AQI**: {aqi_label}"
-            )
+            if is_ta:
+                return f"🌱 **{cta} பயிர்கள் மிக ஆரோக்கியமாக வளர்கின்றன!** தற்போதைய பராமரிப்பு முறையைத் தொடரவும்."
+            else:
+                return f"🌱 **Your {cta} crops are in great health and growing well!** Moisture and soil conditions are ideal."
 
-    # 8. Weather Advice
+    # 9. Weather Advice
     if any(k in q for k in ["weather", "rain", "forecast", "climate", "மழை", "வானிலை"]):
         wnote = pred_result.get("weather_note", "Stable weather next 24h")
         if is_ta:
-            return (
-                f"🌦️ **வானிலை ஆலோசனை**\n"
-                f"- **முன்னறிவிப்பு**: {wnote}\n"
-                f"- **வெப்பநிலை**: {temp:.1f}°C | **ஈரப்பதம்**: {hum:.0f}%\n"
-                f"- மழை எதிர்பார்க்கப்பட்டால் பூச்சிக்கொல்லி தெளிப்பதையும் உரமிடுவதையும் தற்காலிகமாக ஒத்திவைக்கவும்."
-            )
+            return f"🌦️ **வானிலை ஆலோசனை**: {wnote}. மழை எதிர்பார்க்கப்பட்டால் பூச்சிக்கொல்லி தெளிப்பதையும் உரமிடுவதையும் தற்காலிகமாக ஒத்திவைக்கவும்."
         else:
-            return (
-                f"🌦️ **Weather & Agricultural Advisory**\n"
-                f"- **Forecast**: {wnote}\n"
-                f"- **Ambient Temp**: {temp:.1f}°C | **Air Humidity**: {hum:.0f}%\n"
-                f"- If rain is forecasted, postpone foliar spraying and top-dress fertilizer applications to prevent runoff."
-            )
+            return f"🌦️ **Weather Advisory**: {wnote}. If heavy rainfall is approaching, hold off on fertilizer top-dressing to prevent nutrient runoff."
 
-    # 9. General AI Fallback
-    safe_query = query.replace('"', "'")
+    # 10. General Conversational Fallback (Simple, non-value-based)
     if is_ta:
-        return (
-            f"🌱 **EcoSense AI விவசாய வழிகாட்டி**\n\n"
-            f"தங்களின் கேள்வி: *'{safe_query}'*\n"
-            f"- **பயிர்**: {cta} (பருவம்: {stage})\n"
-            f"- **கள நிலவரம்**: ஈரப்பதம் {moist:.0f}%, TDS {tds:.0f} ppm, வெப்பநிலை {temp:.1f}°C.\n\n"
-            f"நீங்கள் என்னிடம் பாசனம், உர அட்டவணை, பூச்சி/நோய் தடுப்பு, மண் உப்புத்தன்மை மற்றும் வானிலை குறித்து கேட்கலாம்!\n\n"
-            f"💡 *(முழுமையான திறந்தவெளி செயற்கை நுண்ணறிவை (Complete AI) இயக்க, தயவுசெய்து உங்கள் Google Gemini API Key ஐ சுற்றுச்சூழல் மாறியில் GEMINI_API_KEY அமைக்கப்பட்டுள்ளதை உறுதிசெய்யவும்.)*"
-        )
+        return f"🌱 நான் உங்கள் EcoSense விவசாய வழிகாட்டி. பாசனம், உர அட்டவணை, பூச்சி/நோய் தடுப்பு மற்றும் வானிலை குறித்து என்னிடம் கேட்கலாம்!"
     else:
-        return (
-            f"🌱 **EcoSense Agricultural Intelligence Companion**\n\n"
-            f"Regarding your query: *'{safe_query}'*\n"
-            f"- **Crop**: {cta} (Growth Stage: {stage})\n"
-            f"- **Live Conditions**: Soil Moisture {moist:.0f}%, TDS {tds:.0f} ppm, Temp {temp:.1f}°C.\n\n"
-            f"You can ask me about irrigation timing, fertilizer schedules (NPK), pest/disease treatments, and water salinity!\n\n"
-            f"💡 *(Tip: To unlock full general reasoning across any question, powered by EcoSense Server-Side AI with Google Gemini.)*"
-        )
+        return f"🌱 I am your EcoSense farming companion. Ask me any practical question about irrigating your farm, fertilizers, pest control, or crop care!"

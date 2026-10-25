@@ -258,7 +258,7 @@ def heuristic(crop, stage, sd, cfg):
             "gas_alert": bool(gas), "tds_safe": tds_safe, "health_score": score}
 
 
-def predict(crop, stage, sensors, w):
+def predict(crop, stage, sensors, w, mode="live"):
     cfg = get_crop_cfg(crop, stage)
     sd = {k: float(sensors.get(k, v)) for k, v in SENSOR_DEFAULTS.items()}
     for k in hist:
@@ -272,25 +272,62 @@ def predict(crop, stage, sensors, w):
         app.logger.warning("ML inference failed, using heuristic: %s", e)
     base = ml if ml else heuristic(crop, stage, sd, cfg)
 
-    # Health score: keep the calibrated rule-based number for the gauge
+    # Calibrated score & agronomic status
     score = heuristic(crop, stage, sd, cfg)["health_score"]
+    health_status = base.get("health_status", "GOOD")
     tds_safe = sd["tds_ppm"] <= cfg["tds_max"]
+    is_drought = sd["soil_moisture"] < cfg["moist_min"]
+    is_waterlogged = sd["soil_moisture"] > 88
 
-    irrigate = base["irrigate_now"]
-    pump_locked = base["pump_locked"] or base["gas_alert"]
-    pump_on = irrigate and not pump_locked
+    # Gas alert from ML or direct MQ sensor thresholds
+    gas_alert = bool(base.get("gas_alert") or (
+        sd["mq135_ammonia"] > 100 or sd["mq4_methane"] > 500 or sd["mq7_co"] > 35 or sd.get("mq2_smoke", 0) > 80
+    ))
 
-    # Weather-aware irrigation overrides
+    # Safety Pump Lock: Must lock if water salinity is high OR hazardous gas is present
+    pump_locked = bool(base.get("pump_locked") or not tds_safe or gas_alert)
+
+    # Irrigation need: Crop needs water if ML says irrigate OR soil moisture is in drought
+    irrigate_needed = bool((base.get("irrigate_now") or is_drought) and not is_waterlogged)
+
+    # Physical pump action:
+    pump_on = irrigate_needed and not pump_locked
+
+    # Weather-aware pump delay (ONLY in LIVE mode, NEVER in SIM mode!)
     fc = get_forecast()
-    if w.get("enabled") and (w.get("rain") or 0) > 2 and pump_on:
-        pump_on = False
-        irrigate = False
-    if fc.get("enabled") and fc.get("rain_coming") and fc.get("total_rain_mm", 0) > 5 and pump_on:
-        pump_on = False
-        irrigate = False
-    if fc.get("heat_coming") and sd["soil_moisture"] < (cfg["moist_opt"] - 5) and not pump_locked:
-        irrigate = True
+    weather_delayed = False
+    if mode != "sim":
+        current_rain = (w.get("rain") or 0) if w.get("enabled") else 0
+        total_rain = fc.get("total_rain_mm", 0) if fc.get("enabled") else 0
+        if (current_rain > 2 or (fc.get("rain_coming") and total_rain > 5)) and pump_on:
+            pump_on = False
+            weather_delayed = True
+
+    # High temperature boost in live mode
+    if mode != "sim" and fc.get("heat_coming") and sd["soil_moisture"] < (cfg["moist_opt"] - 5) and not pump_locked:
+        irrigate_needed = True
         pump_on = True
+
+    # Generate clear agronomic advisory message:
+    if pump_locked:
+        lock_reasons = []
+        if not tds_safe:
+            lock_reasons.append(f"High Water Salinity ({sd['tds_ppm']:.0f} ppm)")
+        if gas_alert:
+            lock_reasons.append("Hazardous Gas Spikes")
+        reason_str = " & ".join(lock_reasons) or "Safety Interlock"
+        if is_drought:
+            advisory = f"Soil needs water, but pump is locked due to {reason_str}. Treat water/ventilate area before irrigating."
+        else:
+            advisory = f"Pump locked due to {reason_str}."
+    elif weather_delayed:
+        advisory = f"Soil moisture is low ({sd['soil_moisture']:.0f}%), but incoming rainfall will irrigate naturally. Pump kept on standby."
+    elif irrigate_needed:
+        advisory = f"Soil moisture is low ({sd['soil_moisture']:.0f}%). Irrigation recommended immediately."
+    elif is_waterlogged:
+        advisory = f"Excessive soil moisture ({sd['soil_moisture']:.0f}%). Pause irrigation to prevent root rot."
+    else:
+        advisory = f"Soil moisture is optimal ({sd['soil_moisture']:.0f}%). No irrigation needed."
 
     trend = trend_from_hist(hist["soil_moisture"])
     aqi = max(0, 100 - (20 if sd["mq135_ammonia"] > 100 else 0)
@@ -299,20 +336,24 @@ def predict(crop, stage, sensors, w):
               - (15 if sd.get("mq2_smoke", 0) > 100 else 0))
     conf = 95 if ml else min(99, max(70, score - 5))
 
+    weather_note = "Simulation Mode Active" if mode == "sim" else fc.get("summary", "Stable weather next 24h")
+
     return {
         "health_score": score,
-        "health_status": base["health_status"],
-        "irrigate_now": bool(irrigate),
+        "health_status": health_status,
+        "irrigate_now": bool(irrigate_needed),
         "pump_on": bool(pump_on),
         "pump_locked": bool(pump_locked),
-        "gas_alert": bool(base["gas_alert"]),
+        "gas_alert": bool(gas_alert),
         "tds_safe": bool(tds_safe),
+        "is_drought": bool(is_drought),
         "trend_moisture": trend,
         "field_aqi": aqi,
         "field_aqi_label": "Excellent" if aqi > 80 else "Good" if aqi > 60 else "Moderate" if aqi > 40 else "Poor",
         "confidence_pct": conf,
         "is_critical_stage": cfg["critical"],
-        "weather_note": fc.get("summary", "Stable weather next 24h"),
+        "weather_note": weather_note,
+        "advisory": advisory,
         "sensors_used": sd,
         "inference_source": "ml" if ml else "heuristic",
     }
@@ -340,9 +381,10 @@ def predict_r():
         d = request.json or {}
         w = get_weather()
         s = dict(d.get("sensors", {}))
-        if esp32_data and d.get("mode", "live") != "sim":
+        mode = d.get("mode", "live")
+        if esp32_data and mode != "sim":
             s.update(esp32_data)
-        return jsonify(predict(d.get("crop", "rice"), d.get("stage", "germination"), s, w))
+        return jsonify(predict(d.get("crop", "rice"), d.get("stage", "germination"), s, w, mode=mode))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -450,8 +492,9 @@ def chat_r():
         if esp32_data:
             s.update(esp32_data)
 
+        mode = d.get("mode", "live")
         w = get_weather()
-        res = predict(crop, stg, s, w)
+        res = predict(crop, stg, s, w, mode=mode)
         sd = res.get("sensors_used", {})
         cfg = get_crop_cfg(crop, stg)
 
