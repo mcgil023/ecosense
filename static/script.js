@@ -412,51 +412,13 @@ async function loadStatus() {
 // ── Complete AI Chat System ──────────────────────────────────
 let chatHistory = [];
 
-function getStoredGeminiKey() {
-  return localStorage.getItem('ecosense_gemini_key') || '';
-}
-
-function openKeyModal() {
-  const modal = gid('keyModal');
-  const inp = gid('geminiKeyInput');
-  if (modal) {
-    if (inp) inp.value = getStoredGeminiKey();
-    modal.style.display = 'flex';
-  }
-}
-
-function closeKeyModal() {
-  const modal = gid('keyModal');
-  if (modal) modal.style.display = 'none';
-}
-
-async function saveApiKey() {
-  const inp = gid('geminiKeyInput');
-  const key = inp ? inp.value.trim() : '';
-  if (key) {
-    localStorage.setItem('ecosense_gemini_key', key);
-    try {
-      await fetch('/api/key', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ key })
-      });
-    } catch(e) {}
-    alert(uiLang==='ta' ? 'API Key வெற்றிகரமாக சேமிக்கப்பட்டது!' : 'Gemini API Key saved successfully!');
-  } else {
-    localStorage.removeItem('ecosense_gemini_key');
-  }
-  closeKeyModal();
-  loadStatus();
-}
-
 function clearChat() {
   chatHistory = [];
   const box = gid('chatBox');
   if (!box) return;
   const welcomeText = uiLang === 'ta'
-    ? '👋 வணக்கம்! நான் உங்கள் முழுமையான AI விவசாய வழிகாட்டி. பயிர் நோய்கள், உரங்கள், பாசனம், வானிலை அல்லது எந்த பொதுவான கேள்வியும் கேளுங்கள்! 🌾'
-    : '👋 Hi! I am your complete AI Farming Companion. Ask me anything about crop diseases, fertilizers, irrigation, weather, or general questions! 🌾';
+    ? '👋 வணக்கம்! நான் உங்கள் முழுமையான AI விவசாய வழிகாட்டி. எக்கோசென்ஸ் திட்டம், சென்சார்கள், பயிர் நோய்கள், உரங்கள், அல்லது எந்த பொதுவான கேள்வியும் கேளுங்கள்! 🌾'
+    : '👋 Hi! I am your complete AI Farming Companion. Ask me anything about EcoSense, sensors, crop diseases, fertilizers, irrigation, weather, or general questions! 🌾';
   box.innerHTML = `
     <div class="chat-msg bot">
       <div class="chat-msg-header"><span class="bot-badge">EcoSense Complete AI</span></div>
@@ -528,18 +490,10 @@ function quickAsk(i) {
 async function loadStatus() {
   try {
     const d = await fetch('/status').then(r => r.json());
-    const b = gid('aiBadge');
     const sb = gid('chatSourceBadge');
-    const storedKey = getStoredGeminiKey();
-    const isLive = d.gemini_ready || Boolean(storedKey);
-    
-    if (b) {
-      b.textContent = isLive ? '✨ Gemini AI' : '🌿 Local KB';
-      b.style.background = isLive ? '#8e44ad' : '#27ae60';
-    }
     if (sb) {
-      sb.textContent = isLive ? '✨ Live AI' : '🌿 Local Engine';
-      sb.style.background = isLive ? '#8e44ad' : '#27ae60';
+      sb.textContent = d.gemini_ready ? '✨ Live AI' : '🌿 Local Engine';
+      sb.style.background = d.gemini_ready ? '#8e44ad' : '#27ae60';
     }
   } catch(e) {}
 }
@@ -566,13 +520,11 @@ async function sendChat() {
   
   try {
     const stEl = gid('stageSel');
-    const storedKey = getStoredGeminiKey();
     
     const res = await fetch('/chat', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(storedKey ? {'X-Gemini-Key': storedKey} : {})
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         message: msg,
@@ -580,8 +532,7 @@ async function sendChat() {
         crop: currentCrop,
         stage: stEl ? stEl.value : 'germination',
         sensors: currentSensors,
-        lang: uiLang,
-        api_key: storedKey
+        lang: uiLang
       })
     });
     
@@ -589,7 +540,7 @@ async function sendChat() {
     dot.remove();
     
     const replyText = data.reply || (uiLang === 'ta' ? 'பதில் பெற முடியவில்லை.' : 'No response.');
-    const sourceLabel = data.source === 'gemini' ? '✨ Gemini AI' : '🌿 EcoSense Local AI';
+    const sourceLabel = data.source === 'gemini' ? '✨ Live AI' : '🌿 EcoSense Local AI';
     
     // Add to history
     chatHistory.push({ role: 'user', text: msg });
@@ -607,15 +558,6 @@ async function sendChat() {
     `;
     box.appendChild(bDiv);
     box.scrollTop = box.scrollHeight;
-    
-    // Update badge if source confirmed
-    const sb = gid('chatSourceBadge');
-    if (sb) {
-      if (data.source === 'gemini') {
-        sb.textContent = '✨ Live AI';
-        sb.style.background = '#8e44ad';
-      }
-    }
   } catch(err) {
     dot.remove();
     const eDiv = document.createElement('div');

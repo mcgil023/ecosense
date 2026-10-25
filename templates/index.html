@@ -124,7 +124,6 @@
         <span id="chatSourceBadge" class="chat-source-badge">⚡ Checking AI...</span>
       </div>
       <div class="chat-head-actions">
-        <button id="apiKeyBtn" class="chat-action-btn" title="Configure Gemini API Key" onclick="openKeyModal()">🔑 Key</button>
         <button id="clearChatBtn" class="chat-action-btn" title="Clear Conversation" onclick="clearChat()">🗑️</button>
       </div>
     </div>
@@ -149,22 +148,6 @@
     </div>
     <div id="chatStatus" class="chat-status"></div>
   </section>
-
-  <!-- Gemini Key Configuration Modal -->
-  <div id="keyModal" class="key-modal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3>🔑 Gemini AI Configuration</h3>
-        <button class="modal-close" onclick="closeKeyModal()">&times;</button>
-      </div>
-      <p class="modal-desc">Enter your Google Gemini API key to enable live generative AI across any topic. Without a key, EcoSense operates using its built-in offline agricultural knowledge engine.</p>
-      <input type="password" id="geminiKeyInput" class="modal-input" placeholder="AIzaSy..." />
-      <div class="modal-buttons">
-        <button class="btn-secondary" onclick="closeKeyModal()">Cancel</button>
-        <button class="btn-primary" onclick="saveApiKey()">Save Key</button>
-      </div>
-    </div>
-  </div>
 
 </main>
 <script src="/static/script.js"></script>

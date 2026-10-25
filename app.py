@@ -185,7 +185,6 @@ def chat_r():
         stg = d.get("stage","germination")
         lang = d.get("lang","ta")
         history = d.get("history", [])
-        custom_key = d.get("api_key") or request.headers.get("X-Gemini-Key")
         
         s = dict(d.get("sensors",{}))
         if esp32_data: s.update(esp32_data)
@@ -204,25 +203,12 @@ def chat_r():
             pred_result=res,
             crop_cfg=cfg,
             weather=w,
-            lang=lang,
-            custom_api_key=custom_key
+            lang=lang
         )
         return jsonify(reply_data)
     except Exception as e:
         app.logger.error("Chat route error: %s", e)
         return jsonify({"reply":f"Chat Error: {e}","source":"error"}),500
-
-@app.route("/api/key", methods=["POST"])
-def set_key_r():
-    try:
-        d = request.json or {}
-        key = d.get("key", "").strip()
-        if key:
-            ai_engine.set_api_key(key)
-            return jsonify({"status": "ok", "message": "API Key configured successfully"})
-        return jsonify({"error": "Empty key provided"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route("/status")
 def status_r():
