@@ -2,8 +2,7 @@
 """
 EcoSense Agricultural Knowledge Base & Offline Domain Engine.
 Provides deep agronomy, plant pathology, fertilizer nutrition,
-water salinity, sensor diagnostics, and EcoSense project intelligence
-in English and Tamil.
+water salinity, and sensor diagnostic intelligence in English and Tamil.
 """
 
 from typing import Dict, Any, List
@@ -291,7 +290,7 @@ def get_gas_safety_guide(sensors: Dict[str, Any], lang: str) -> str:
                 f"- No toxic gas accumulation detected. Safe working environment."
             )
 
-# 5. Core Offline Engine Matcher (Includes EcoSense Project Info)
+# 5. Core Offline Engine Matcher
 def query_knowledge_base(
     query: str,
     crop: str,
@@ -311,47 +310,40 @@ def query_knowledge_base(
     max_tds = crop_cfg.get("tds_max", 800)
     opt_moist = crop_cfg.get("moist_opt", 75)
     min_moist = crop_cfg.get("moist_min", 60)
-
-    # 0. EcoSense Project & System Architecture Queries
-    if any(k in q for k in ["ecosense", "about project", "what is this project", "project architecture", "project details", "திட்டம் பற்றி", "எக்கோசென்ஸ்"]):
+    # 0. EcoSense Project, IoT Hardware & Sensor Queries
+    if any(k in q for k in ['ecosense', 'project', 'about this', 'hardware', 'esp32', 'sensor', 'iot', 'system', 'architecture', 'சென்சார்', 'திட்டம்']):
         if is_ta:
             return (
-                "🌱 **EcoSense திட்ட மேலோட்டம் (EcoSense Project Overview)**\n"
-                "- **நோக்கம்**: செயற்கை நுண்ணறிவு (AI) மற்றும் IoT சென்சார்கள் மூலம் பயிர் ஆரோக்கியம், நீர்ப்பாசனம் மற்றும் வயல்வெளி பாதுகாப்பை தானியங்குபடுத்துதல்.\n"
-                "- **வன்பொருள் (Hardware)**: ESP32 மைக்ரோகண்ட்ரோலர், மண் ஈரப்பதம் சென்சார், நீர் உப்புத்தன்மை (TDS) சென்சார், MQ-135 (NH3), MQ-4 (Methane), MQ-7 (CO) வாயு சென்சார்கள், மற்றும் பம்ப் ரிலே.\n"
-                "- **பாதுகாப்பு**: நீர் உப்பு அதிகமானாலோ அல்லது நச்சு வாயுக்கள் கசிந்தாலோ பம்ப் தானாக பூட்டப்படும் (Pump Lock).\n"
-                "- **மெஷின் லேர்னிங்**: Random Forest வழிமுறைகள் மூலம் பயிர் ஆரோக்கியம் மற்றும் பாசன தேவைகள் கணிக்கப்படுகின்றன."
+                "🌱 **EcoSense ஸ்மார்ட் விவசாய திட்டத்தின் கண்ணோட்டம் (EcoSense Project Overview)**\n\n"
+                "**EcoSense** என்பது ESP32 IoT சாதனம் மற்றும் செயற்கை நுண்ணறிவு (AI/ML) இணைந்த நவீன துல்லிய விவசாய தளமாகும்.\n\n"
+                "📡 **பயன்படுத்தப்படும் IoT சென்சார்கள் (Sensors Used):**\n"
+                "- **ESP32 Microcontroller**: நிகழ்நேர வைஃபை மூலம் சென்சார் தரவுகளை சர்வரருக்கு அனுப்புகிறது.\n"
+                "- **மண் ஈரப்பத சென்சார் (Capacitive Soil Moisture v1.2)**: வேர்ப்பகுதியில் உள்ள ஈரப்பதத்தை துல்லியமாக கணக்கிடுகிறது.\n"
+                "- **TDS சென்சார் (Water Salinity)**: பாசன நீரின் உவர்தன்மையை (ppm) அளவிடுகிறது.\n"
+                "- **வெப்பநிலை மற்றும் ஈரப்பத சென்சார் (DHT22 / DS18B20)**: காற்று மற்றும் மண் வெப்பநிலையைக் கண்காணிக்கிறது.\n"
+                "- **MQ வாயு சென்சார்கள்**: MQ-135 (அம்மோனியா), MQ-4 (மீத்தேன்), MQ-7 (கார்பன் மோனாக்சைடு), MQ-2 (புகை).\n\n"
+                "🤖 **செயற்கை நுண்ணறிவு & பாதுகாப்பு பூட்டு (AI & Safety Lock):**\n"
+                "- 4 பிரத்யேக இயந்திர கற்றல் (ML) மாதிரிகள் மூலம் பயிர் ஆரோக்கியம், பாசன தேவை மற்றும் வாயு அபாய எச்சரிக்கைகள் கணிக்கப்படுகின்றன.\n"
+                "- நீர் உவர்தன்மை அதிகமானால் பயிர் வேர் அழுகலைத் தடுக்க பம்ப் தானாகவே பூட்டப்படும் (Automatic Pump Lock)."
             )
         else:
             return (
-                "🌱 **EcoSense Project Architecture & Overview**\n"
-                "- **System Vision**: An autonomous AI & IoT smart agriculture platform enabling precision irrigation, plant health monitoring, and hazardous gas mitigation.\n"
-                "- **Hardware**: ESP32 microcontroller with Wi-Fi telemetry; Capacitive Soil Moisture Sensor v1.2; Gravity Analog TDS sensor; MQ-135 (Ammonia/Air Quality), MQ-4 (Methane), and MQ-7 (Carbon Monoxide); and 5V Relay pump controller.\n"
-                "- **Automated Interlocks**: Irrigation pump is automatically locked if water TDS exceeds crop safe thresholds or if combustible/toxic gas alerts are triggered.\n"
-                "- **Machine Learning**: Scikit-learn Random Forest classifiers predicting Health Status, Irrigation urgency, and Actuator locks."
+                "🌱 **EcoSense Smart Precision Agriculture System Overview**\n\n"
+                "**EcoSense** is an autonomous IoT and Machine Learning platform engineered to optimize crop yield, soil health, and precision irrigation.\n\n"
+                "📡 **IoT Hardware & Sensors Architecture:**\n"
+                "- **ESP32 Microcontroller**: High-speed telemetry reporting live soil and environmental metrics to the server via Wi-Fi.\n"
+                "- **Capacitive Soil Moisture Sensor v1.2**: Corrosion-resistant analog probe monitoring moisture percentage in the root zone.\n"
+                "- **TDS (Total Dissolved Solids) Sensor**: Measures irrigation water salinity in ppm to prevent root toxicity.\n"
+                "- **Temperature & Humidity Probes**: Monitors ambient micro-climate and root-zone soil temperature.\n"
+                "- **MQ Hazardous Gas Sensor Array**: MQ-135 (Ammonia/Air quality), MQ-4 (Methane), MQ-7 (Carbon Monoxide), and MQ-2 (Smoke).\n\n"
+                "🤖 **AI & ML Decision Engine:**\n"
+                "- 4 Scikit-learn ML models predicting crop health status, irrigation triggers, gas alerts, and safety interlocks.\n"
+                "- Automatic safety pump lockout when salinity exceeds crop thresholds or hazardous gas spikes are detected.\n"
+                "- Dynamic weather forecast integration (OpenWeatherMap) to prevent irrigation before rainfall."
             )
 
-    if any(k in q for k in ["sensor", "hardware", "esp32", "mq135", "mq4", "mq7", "சென்சார்", "கருவி"]):
-        if is_ta:
-            return (
-                "⚙️ **EcoSense வன்பொருள் & சென்சார்கள் (Sensors Used)**\n"
-                "1. **ESP32 Wi-Fi**: பண்ணை சென்சார் தகவல்களை நிகழ்நேரத்தில் (Real-time) சர்வருக்கு அனுப்பும் மையக் கருவி.\n"
-                "2. **மண் ஈரப்பதம் சென்சார் (0-100%)**: பயிர் வேர் பகுதியில் உள்ள நீரின் அளவை அளவிடுகிறது.\n"
-                "3. **TDS சென்சார் (ppm)**: பாசன நீரின் உப்புத்தன்மையை கண்காணித்து பயிர் கருகலைத் தடுக்கிறது.\n"
-                "4. **MQ-135**: அம்மோனியா (NH3) மற்றும் காற்று தரத்தை கண்காணிக்கிறது.\n"
-                "5. **MQ-4 & MQ-7**: மீத்தேன் (CH4) மற்றும் கார்பன் மோனாக்சைடு (CO) நச்சு வாயுக்களைக் கண்டறிகிறது."
-            )
-        else:
-            return (
-                "⚙️ **EcoSense Hardware & Sensor Specifications**\n"
-                "1. **ESP32 Microcontroller**: Ingests telemetry and pushes live sensor JSON to backend via HTTP POST.\n"
-                "2. **Capacitive Soil Moisture v1.2**: Corrosion-resistant analog sensor measuring volumetric water content.\n"
-                "3. **Gravity Analog TDS Sensor**: Evaluates electrical conductivity/salinity in ppm against crop limits.\n"
-                "4. **MQ-135 Gas Sensor**: Monitors Ammonia (NH3) emissions from manure and anaerobic sludge.\n"
-                "5. **MQ-4 & MQ-7 Sensors**: Detects flammable Methane (CH4) and toxic Carbon Monoxide (CO)."
-            )
 
-    # 1. Specific Diseases & Pests
+    # 1. Check Specific Diseases & Pests FIRST (avoid accidental substring matches)
     for pest_key, data in DISEASE_PEST_DB.items():
         if any(kw in q for kw in data["keywords"]):
             return data["ta" if is_ta else "en"]
@@ -472,8 +464,8 @@ def query_knowledge_base(
             f"தங்களின் கேள்வி: *'{safe_query}'*\n"
             f"- **பயிர்**: {cta} (பருவம்: {stage})\n"
             f"- **கள நிலவரம்**: ஈரப்பதம் {moist:.0f}%, TDS {tds:.0f} ppm, வெப்பநிலை {temp:.1f}°C.\n\n"
-            f"நீங்கள் என்னிடம் EcoSense திட்டம், சென்சார்கள், பாசனம், உர அட்டவணை, பூச்சி/நோய் தடுப்பு மற்றும் வானிலை குறித்து கேட்கலாம்!\n\n"
-            f"💡 *(குறிப்பு: சர்வர் சூழலில் (Environment Variables) GEMINI_API_KEY அமைக்கப்படும் போது நேரடி ஜெனரேட்டிவ் AI திறந்தவெளி வினாக்களுக்கும் பதிலளிக்கும்.)*"
+            f"நீங்கள் என்னிடம் பாசனம், உர அட்டவணை, பூச்சி/நோய் தடுப்பு, மண் உப்புத்தன்மை மற்றும் வானிலை குறித்து கேட்கலாம்!\n\n"
+            f"💡 *(முழுமையான திறந்தவெளி செயற்கை நுண்ணறிவை (Complete AI) இயக்க, தயவுசெய்து உங்கள் Google Gemini API Key ஐ சுற்றுச்சூழல் மாறியில் GEMINI_API_KEY அமைக்கப்பட்டுள்ளதை உறுதிசெய்யவும்.)*"
         )
     else:
         return (
@@ -481,6 +473,6 @@ def query_knowledge_base(
             f"Regarding your query: *'{safe_query}'*\n"
             f"- **Crop**: {cta} (Growth Stage: {stage})\n"
             f"- **Live Conditions**: Soil Moisture {moist:.0f}%, TDS {tds:.0f} ppm, Temp {temp:.1f}°C.\n\n"
-            f"You can ask me about EcoSense project details, sensors, irrigation timing, fertilizer schedules (NPK), pest/disease treatments, and water salinity!\n\n"
-            f"💡 *(Note: Full live generative AI operates when GEMINI_API_KEY is configured in the server environment variables.)*"
+            f"You can ask me about irrigation timing, fertilizer schedules (NPK), pest/disease treatments, and water salinity!\n\n"
+            f"💡 *(Tip: To unlock full general reasoning across any question, powered by EcoSense Server-Side AI with Google Gemini.)*"
         )

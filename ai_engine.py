@@ -2,9 +2,8 @@
 """
 EcoSense Hybrid AI Engine.
 Integrates Google Gemini Large Language Model with multi-turn chat memory,
-deep project knowledge, real-time farm sensor telemetry,
+deep agricultural system instructions, farm sensor situational telemetry,
 and fallback to the local Agricultural Knowledge Base.
-Operates strictly using server-side environment variables for security.
 """
 
 import os
@@ -33,11 +32,22 @@ def load_dotenv():
 
 load_dotenv()
 
+_active_key = os.environ.get("GEMINI_API_KEY", "").strip()
 _active_model_name = None
 
 def get_api_key() -> str:
-    # Always read from server environment / local .env
+    global _active_key
+    if _active_key:
+        return _active_key
     return os.environ.get("GEMINI_API_KEY", "").strip()
+
+def set_api_key(key: str) -> None:
+    global _active_key
+    _active_key = (key or "").strip()
+    if _active_key:
+        os.environ["GEMINI_API_KEY"] = _active_key
+    elif "GEMINI_API_KEY" in os.environ:
+        del os.environ["GEMINI_API_KEY"]
 
 def is_gemini_available() -> bool:
     return bool(get_api_key())
@@ -73,18 +83,9 @@ def build_system_prompt(crop: str, stage: str, sensors: Dict[str, Any], pred_res
         else "Respond in clear, professional English."
     )
     
-    return f"""You are EcoSense AI, the intelligent companion and agronomic brain of the EcoSense Smart Precision Agriculture system.
-You are intimately familiar with the EcoSense project architecture, sensors, machine learning models, and automation logic.
-You also possess complete, unrestricted general AI intelligence: you can answer ANY question (whether about the EcoSense project, agriculture, plant pathology, computer science, or general topics) accurately, intelligently, and politely.
-
-ABOUT THE ECOSENSE PROJECT:
-- Purpose: An AI & IoT smart agriculture platform designed to monitor crop health, automate precision irrigation, detect toxic field gases, and prevent crop loss from salinity shock.
-- Hardware & IoT: ESP32 microcontroller publishing real-time telemetry over Wi-Fi via HTTP POST to /esp32; Capacitive Soil Moisture Sensor v1.2 (0-100%); Gravity Analog TDS sensor measuring water salinity in ppm; MQ-135 (Ammonia NH3 & air quality); MQ-4 (Methane CH4); MQ-7 (Carbon Monoxide CO); DHT11/DHT22 ambient temperature & humidity sensors; 5V Relay module controlling irrigation pump actuator.
-- Automated Safety Interlocks:
-  1. High Salinity Lock: If water TDS exceeds the crop's threshold, the pump is automatically locked to prevent osmotic shock and root burning.
-  2. Gas Hazard Lock: If MQ-135 (NH3 > 200ppm), MQ-4 (CH4 > 1000ppm), or MQ-7 (CO > 100ppm) exceed safety limits, pump is locked to eliminate spark hazards and workers are warned to evacuate.
-- Machine Learning Models: Pre-trained scikit-learn models (Random Forest) for Crop Health Status (GOOD/MODERATE/POOR/CRITICAL), Urgent Irrigation Need (True/False), and Pump Lockout.
-- Crops Supported: Rice (Paddy), Maize (Corn), Groundnut (Peanut), Sugarcane, Coconut, plus general crops.
+    return f"""You are EcoSense AI, an autonomous smart agricultural companion and agronomic intelligence system.
+You are an expert in plant pathology, soil fertility, precision irrigation, fertilizer calculation (NPK), pest management, and smart farm IoT electronics (ESP32 sensors).
+You also possess complete general AI intelligence: you can answer any general question, scientific query, or user topic accurately and politely.
 
 LIVE FARM SENSORS & STATUS CONTEXT:
 - Selected Crop: {crop} | Growth Stage: {stage}
@@ -97,11 +98,10 @@ LIVE FARM SENSORS & STATUS CONTEXT:
 - Meteorological Outlook: {weather_note}
 
 GUIDELINES:
-1. When answering farm/crop questions, ground your advice in the live sensor values above. For example, explain why the pump is locked (high TDS or gas hazard) or if soil moisture is deficient.
-2. When answering questions about the EcoSense project, explain its hardware, ML models, and safety features accurately.
-3. When answering general questions, answer comprehensively like a complete, helpful AI assistant.
-4. Formatting: Use rich GitHub Markdown with bold headings, bullet points, and numbered steps.
-5. Language Requirement: {lang_instruction}
+1. When answering farm/crop questions, ALWAYS ground your advice in the live sensor values above. For example, explain why the pump is locked (high TDS or gas hazard) or if soil moisture is deficient.
+2. When answering general questions (science, math, general agriculture, world knowledge), answer fully and intelligently like a complete AI assistant.
+3. Formatting: Use rich GitHub Markdown with bold headings, bullet points for symptoms and dosages, and numbered lists for sequential steps. Keep your answers comprehensive yet concise and well-structured.
+4. Language Requirement: {lang_instruction}
 """
 
 def generate_chat_reply(
@@ -113,7 +113,8 @@ def generate_chat_reply(
     pred_result: Optional[Dict[str, Any]] = None,
     crop_cfg: Optional[Dict[str, Any]] = None,
     weather: Optional[Dict[str, Any]] = None,
-    lang: str = "en"
+    lang: str = "en",
+    custom_api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     global _active_model_name
     
@@ -123,7 +124,8 @@ def generate_chat_reply(
     weather = weather or {}
     history = history or []
     
-    api_key = get_api_key()
+    # Priority: custom_api_key > _active_key
+    api_key = (custom_api_key or "").strip() or get_api_key()
     
     if api_key:
         sys_prompt = build_system_prompt(crop, stage, sensors, pred_result, crop_cfg, weather, lang)
@@ -166,6 +168,7 @@ def generate_chat_reply(
                             "status": "ok"
                         }
                 except Exception as inner_e:
+                    # Continue trying next model in cascade
                     continue
         except Exception as genai_err:
             pass
@@ -182,6 +185,7 @@ def generate_chat_reply(
                         system_instruction=sys_prompt
                     )
                     
+                    # Convert history
                     chat_hist = []
                     for item in history[-6:]:
                         role = "user" if item.get("role") == "user" else "model"
@@ -220,5 +224,6 @@ def generate_chat_reply(
         "reply": kb_reply,
         "source": "offline",
         "model": "offline-kb",
-        "status": "ok"
+        "status": "ok",
+        "has_gemini_key": bool(api_key)
     }

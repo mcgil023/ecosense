@@ -1,174 +1,296 @@
-:root{--bg:#0d1a0f;--card:#111e13;--border:#1e3320;--green:#2ecc71;--text:#c8e6c9;--muted:#4a7c59;--warn:#f39c12;--danger:#e74c3c}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;font-size: 14px}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:#0a1409;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-.logo-text{font-size:18px;font-weight:800;color:var(--green)}.logo-sub{font-size: 12px;color:var(--muted)}
-.topbar-right{display:flex;align-items:center;gap:8px}
-.mode-tag{background:#162118;color:var(--green);border:1px solid var(--border);border-radius:12px;padding:2px 10px;font-size: 12px;font-weight:700}
-.clock{font-size: 14px;color:var(--muted);font-family:monospace}
-.mode-bar{display:flex;gap:8px;padding:8px 16px;background:#0a1409;border-bottom:1px solid var(--border)}
-.mode-btn{background:#162118;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:5px 16px;font-size: 14px;font-weight:700;cursor:pointer}
-.mode-btn.active-mode{background:var(--green);color:#000;border-color:var(--green)}
-.simbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#0a1409;border-bottom:1px solid var(--border);flex-wrap:wrap;transition:opacity .3s}
-.sim-label{font-size: 14px;font-weight:700;color:var(--muted)}
-.scenario-chips{display:flex;gap:6px;flex-wrap:wrap}
-.scenario-chips button{background:#162118;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:3px 12px;font-size: 14px;cursor:pointer}
-.scenario-chips button.active-sc,.scenario-chips button:hover{background:var(--green);color:#000;border-color:var(--green)}
-.grid{display:grid;grid-template-columns:1fr 1.4fr 1.4fr;gap:12px;padding:12px}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.crop-tabs{display:flex;gap:4px;flex-wrap:wrap}
-.crop-tab{background:#162118;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size: 12px;cursor:pointer}
-.crop-tab.active{background:var(--green);color:#000;border-color:var(--green)}
-.stage-row{display:flex;align-items:center;gap:8px}
-.stage-label{font-size: 14px;color:var(--muted)}
-.stage-sel{background:#162118;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size: 14px;outline:none}
-.crop-face{display:flex;justify-content:center;padding:4px 0}
-.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
-.gauge-score{font-size:28px;font-weight:900;color:var(--green)}
-.gauge-sub{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.health-tag{text-align:center;font-size: 14px;font-weight:800;padding:4px 10px;border-radius:8px;background:#162118}
-.health-tag.good{color:#2ecc71}.health-tag.moderate{color:#f39c12}.health-tag.poor{color:#e67e22}.health-tag.critical{color:#e74c3c}
-.panel-title{font-size: 12px;font-weight:800;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:4px}
-.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.s-cell{display:flex;flex-direction:column;gap:2px}
-.s-icon{font-size:14px}.s-label{font-size: 12px;color:var(--muted)}.s-val{font-size:16px;font-weight:700;color:var(--green)}
-.s-bar{height:3px;background:#162118;border-radius:2px;overflow:hidden}
-.s-fill{height:100%;border-radius:2px;background:var(--green);transition:width .4s}
-.gas-row{display:flex;gap:6px;flex-wrap:wrap}
-.gas-pill{background:#162118;border:1px solid var(--border);border-radius:10px;padding:3px 10px;font-size: 14px}
-.decision-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.d-card{background:#162118;border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center}
-.d-val{font-size: 14px;font-weight:700;color:var(--green)}.d-label{font-size:9px;color:var(--muted);margin-top:2px}
-.trend-strip{display:flex;gap:8px;flex-wrap:wrap;font-size: 12px}
-.trend-key{color:var(--muted)}.trend-val{color:var(--green);font-weight:700;margin-right:6px}
-.advice-title{font-size: 14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.advice-text{font-size: 14px;line-height:1.5;min-height:40px}
-.weather-note{font-size: 14px;color:var(--muted);font-style:italic}
-.conf-text{font-size: 12px;color:var(--muted)}
-.weather-strip{padding:4px 0}
-.weather-pill{background:#162118;border:1px solid var(--border);border-radius:10px;padding:4px 12px;font-size: 14px;display:inline-block}
-.forecast-strip{display:flex;gap:6px;overflow-x:auto;padding:4px 0}
-.fc-slot{background:#162118;border:1px solid var(--border);border-radius:8px;padding:4px 8px;text-align:center;min-width:48px;font-size: 12px}
-.fc-time{color:var(--muted)}.fc-temp{color:var(--green);font-weight:700}.fc-rain{color:#3498db}
-.chat-head{display:flex;align-items:center;gap:6px}
-.chat-head-title{font-size: 14px;font-weight:800;color:var(--green)}
-.chat-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
-.chat-box{height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:6px;background:#0d1a0f;border-radius:8px;border:1px solid var(--border)}
-.chat-msg{max-width:85%;padding:6px 10px;border-radius:10px;font-size: 14px;line-height:1.5}
-.chat-msg.user{background:var(--green);color:#000;align-self:flex-end}
-.chat-msg.bot{background:#162118;color:var(--text);align-self:flex-start}
-.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.quick-grid button{background:#162118;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 4px;font-size: 12px;cursor:pointer;text-align:center}
-.quick-grid button:hover{background:var(--green);color:#000}
-.chat-input-row{display:flex;gap:6px}
-.chat-input{flex:1;background:#162118;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size: 14px;outline:none}
-.chat-send{background:var(--green);color:#000;border:none;border-radius:8px;padding:7px 14px;font-size: 14px;cursor:pointer;font-weight:700}
-.chat-status{font-size: 12px;color:var(--muted);min-height:14px}
-.alert-active{background:#e74c3c!important;color:#fff!important;border-color:#e74c3c!important;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:#0d1a0f}
-::-webkit-scrollbar-thumb{background:#1e3320;border-radius:2px}
+/* ── EcoSense Industrial Dark/Light CSS ───────────────────────── */
+:root {
+  --bg-app: #080d09;
+  --bg-card: #0f1711;
+  --bg-card-alt: #141f17;
+  --border: #1e3322;
+  --border-strong: #2d4d33;
+  --text: #e2ede4;
+  --text-muted: #7d9682;
+  --accent-green: #2ecc71;
+  --accent-blue: #3498db;
+  --accent-yellow: #f1c40f;
+  --accent-red: #e74c3c;
+  --accent-purple: #8e44ad;
+  --mono-font: 'JetBrains Mono', monospace;
+  --sans-font: 'Plus Jakarta Sans', sans-serif;
+}
 
+[data-theme="light"] {
+  --bg-app: #f4f7f4;
+  --bg-card: #ffffff;
+  --bg-card-alt: #ebf0ec;
+  --border: #d2ddd4;
+  --border-strong: #a9bea0;
+  --text: #1b261e;
+  --text-muted: #5e7362;
+  --accent-green: #27ae60;
+  --accent-blue: #2980b9;
+}
 
-/* ══ 3-COLUMN LAYOUT ════════════════════════════════════════ */
-.tri-grid {
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans-font);
+  background: var(--bg-app);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
+.brand-glyph { font-size: 18px; color: var(--accent-green); }
+.brand-title { color: var(--accent-green); font-family: var(--mono-font); font-weight: 700; }
+.brand-divider { color: var(--border-strong); }
+.brand-sub { color: var(--text-muted); font-size: 11px; font-weight: 700; font-family: var(--mono-font); }
+
+.topbar-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.crop-stage-group { display: flex; align-items: center; gap: 6px; }
+.ctrl-label { font-size: 11px; font-weight: 700; color: var(--text-muted); font-family: var(--mono-font); }
+.ctrl-select {
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--sans-font);
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+.ctrl-select:focus { border-color: var(--accent-green); }
+
+.status-cluster { display: flex; align-items: center; gap: 8px; }
+.tag-status { font-family: var(--mono-font); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
+.tag-off { background: rgba(231,76,60,0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
+.tag-on { background: rgba(46,204,113,0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+.tag-mode { font-family: var(--mono-font); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: rgba(241,196,15,0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+
+.btn-tool {
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-tool:hover { border-color: var(--accent-green); color: var(--accent-green); }
+.clock-mono { font-family: var(--mono-font); font-size: 12px; font-weight: 700; color: var(--text-muted); }
+
+/* ── Simulator Sub-bar ───────────────────────────────────────── */
+.simbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 20px;
+  background: var(--bg-card-alt);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.sim-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sim-label { font-family: var(--mono-font); font-size: 10px; font-weight: 700; color: var(--text-muted); margin-right: 4px; }
+.sim-btn {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: var(--mono-font);
+  cursor: pointer;
+}
+.sim-btn:hover { background: var(--accent-green); color: #000; border-color: var(--accent-green); }
+.mode-toggles { display: flex; gap: 4px; }
+.mode-btn {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono-font);
+  cursor: pointer;
+}
+.mode-btn.active-mode { background: var(--border-strong); color: var(--accent-green); border-color: var(--accent-green); }
+
+/* ── Main Asymmetric Grid Layout ────────────────────────────── */
+.asym-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 300px;
-  gap: 12px;
-  padding: 12px;
-  max-width: 1400px;
-  margin: 0 auto;
+  grid-template-columns: 1.6fr 1.1fr;
+  gap: 16px;
+  padding: 16px 20px;
+  flex: 1;
   align-items: start;
 }
-@media(max-width:900px){ .tri-grid { grid-template-columns:1fr; } }
+.left-col { display: flex; flex-direction: column; gap: 16px; }
 
-/* Centre card */
-.centre-card {
-  display: flex; flex-direction: column;
-  align-items: center; text-align: center;
-}
-.centre-card .gauge-wrap {
-  margin: 10px auto 4px;
-  display: flex; flex-direction: column; align-items: center;
+/* ── Common Card Style ──────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
 }
 
-/* Gauge score text */
-.gauge-score { font-size:2rem; font-weight:900; color:#2ecc71; line-height:1; }
-.gauge-sub   { font-size:10px; color:#4a7c59; letter-spacing:1px; margin-top:2px; }
+.panel-eyebrow { font-family: var(--mono-font); font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px; }
+.panel-h2 { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
 
-/* Smooth gauge fill animation */
-#gaugeFill {
-  transition: stroke-dashoffset 0.6s ease;
+/* ── Row 1: Gauge & Health Diagnostic ───────────────────────── */
+.gauge-split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: center; }
+.status-banner {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: var(--mono-font);
+  background: rgba(46,204,113,0.15);
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  margin-bottom: 12px;
 }
+.advice-block { margin-bottom: 10px; }
+.advice-lead { font-family: var(--mono-font); font-size: 10px; font-weight: 700; color: var(--accent-green); margin-bottom: 2px; }
+.advice-body { font-size: 12px; color: var(--text); line-height: 1.4; }
+.diag-meta { display: flex; gap: 16px; font-family: var(--mono-font); font-size: 10px; }
+.meta-k { color: var(--text-muted); }
+.meta-v { color: var(--accent-green); font-weight: 700; }
 
-/* Advice under gauge */
-.centre-card .advice-title { margin-top:8px; font-size:12px; font-weight:800; }
-.centre-card .advice-text  { font-size:12px; max-width:320px; line-height:1.5; }
+.gauge-box { position: relative; width: 100%; max-width: 180px; margin: 0 auto; text-align: center; }
+.gauge-svg { width: 100%; height: auto; }
+.gauge-readout { position: absolute; bottom: 4px; left: 0; right: 0; }
+.gauge-val { font-size: 26px; font-weight: 800; font-family: var(--mono-font); color: var(--accent-green); display: block; line-height: 1; }
+.gauge-sub { font-size: 8px; font-family: var(--mono-font); color: var(--text-muted); }
 
-/* Left sensor card */
-.sensor-card { overflow-y:auto; max-height:calc(100vh - 130px); }
+.weather-strip { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11px; flex-wrap: wrap; }
+.weather-pill { background: var(--bg-card-alt); padding: 3px 8px; border-radius: 12px; font-family: var(--mono-font); }
+.weather-note { color: var(--text-muted); font-size: 11px; }
+.forecast-strip { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; }
+.fc-slot { background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; text-align: center; font-size: 10px; min-width: 46px; font-family: var(--mono-font); }
 
-/* Right chat card */
+/* ── Row 2: Sensors & Telemetry ─────────────────────────────── */
+.sensor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.s-cell { background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+.s-top { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+.s-val { font-size: 14px; font-weight: 800; font-family: var(--mono-font); color: var(--text); }
+.s-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.s-fill { height: 100%; width: 0%; background: var(--accent-green); transition: width 0.4s ease; }
+
+.gas-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.gas-pill { background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-family: var(--mono-font); font-size: 11px; }
+
+.decision-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.d-card { background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: 6px; padding: 6px; text-align: center; }
+.d-val { font-size: 12px; font-weight: 800; font-family: var(--mono-font); color: var(--accent-green); }
+.d-label { font-size: 9px; font-family: var(--mono-font); color: var(--text-muted); }
+
+.trend-strip { display: flex; gap: 12px; font-size: 11px; font-family: var(--mono-font); color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px; }
+.trend-val { color: var(--text); font-weight: 700; margin-left: 2px; }
+
+/* ── Right Column: Enhanced Chat Card ───────────────────────── */
 .chat-card {
-  display:flex; flex-direction:column;
-  height:calc(100vh - 130px); max-height:800px;
-}
-.chat-box { flex:1; overflow-y:auto; min-height:0; }
-
-/* ══ ESP32 STATUS BADGE ══════════════════════════════════════ */
-.esp32-badge {
-  font-size:11px; font-weight:700;
-  padding:3px 10px; border-radius:12px;
-  border:1px solid; display:inline-flex;
-  align-items:center; gap:4px;
-  transition:all .4s ease;
-}
-.esp32-on  { background:#0d2b0d; color:#2ecc71; border-color:#2ecc71; }
-.esp32-off { background:#2b0d0d; color:#e74c3c; border-color:#e74c3c; }
-
-/* ══ MISC POLISH ══════════════════════════════════════════════ */
-.lang-btn {
-  background:#162118; color:#2ecc71;
-  border:1px solid #2ecc71; border-radius:14px;
-  padding:3px 12px; font-size:11px; font-weight:700; cursor:pointer;
-}
-.lang-btn:hover { background:#2ecc71; color:#0a1a0a; }
-
-.wa-btn {
-  margin:8px 0; width:100%;
-  background:#1a3320; color:#2ecc71;
-  border:1px solid #2ecc71; border-radius:10px;
-  padding:8px; font-size:12px; font-weight:700; cursor:pointer;
-}
-.wa-btn:hover { background:#2ecc71; color:#0a1a0a; }
-
-.ai-badge {
-  display:inline-block; margin-top:4px;
-  background:#8e44ad; color:#fff;
-  font-size:10px; font-weight:700;
-  padding:2px 10px; border-radius:10px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  max-height: 850px;
+  position: sticky;
+  top: 70px;
 }
 
-.simbar {
-  display:flex; align-items:center;
-  gap:8px; padding:6px 16px;
-  background:#0d1f0d; border-bottom:1px solid #1e3320;
-  flex-wrap:wrap;
-}
-
-/* ── Enhanced Chatbot Styles ────────────────────────── */
-.chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .chat-head-left { display: flex; align-items: center; gap: 6px; }
-.chat-head-actions { display: flex; align-items: center; gap: 4px; }
-.chat-action-btn { background: #1a2e1d; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
-.chat-action-btn:hover { background: var(--green); color: #000; }
-.chat-source-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #27ae60; color: #fff; margin-left: 4px; }
-.chat-msg-header { font-size: 10px; font-weight: 700; color: var(--green); margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+.chat-head-title { font-size: 13px; font-weight: 800; color: var(--accent-green); font-family: var(--mono-font); }
+.chat-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-green); }
+.chat-source-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #27ae60; color: #fff; font-family: var(--mono-font); }
+.chat-action-btn { background: var(--bg-card-alt); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+.chat-action-btn:hover { background: var(--accent-green); color: #000; }
+
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: var(--bg-card-alt);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.chat-msg { max-width: 90%; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.5; }
+.chat-msg.user { background: var(--accent-green); color: #000; align-self: flex-end; font-weight: 600; border-bottom-right-radius: 2px; }
+.chat-msg.bot { background: var(--bg-card); color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+.chat-msg-header { font-size: 10px; font-weight: 700; color: var(--accent-green); margin-bottom: 4px; display: flex; justify-content: space-between; font-family: var(--mono-font); }
+.chat-msg-source { opacity: 0.8; font-size: 9px; }
 .chat-msg-content { word-break: break-word; }
-.chat-msg-content strong { color: #2ecc71; font-weight: 700; }
-.chat-msg-content ul, .chat-msg-content ol { margin: 4px 0 4px 16px; padding: 0; }
+.chat-msg-content strong { color: var(--accent-green); }
+.chat-msg-content ul, .chat-msg-content ol { margin: 4px 0 4px 16px; }
 .chat-msg-content li { margin-bottom: 2px; }
 .chat-msg-content p { margin: 4px 0; }
-.chat-msg-source { font-size: 9px; opacity: 0.7; margin-top: 4px; text-align: right; }
+
+.quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 8px; }
+.quick-grid button {
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 4px;
+  font-size: 11px;
+  font-family: var(--sans-font);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.quick-grid button:hover { background: var(--accent-green); color: #000; border-color: var(--accent-green); }
+
+.chat-input-row { display: flex; gap: 6px; }
+.chat-input {
+  flex: 1;
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+}
+.chat-input:focus { border-color: var(--accent-green); }
+.chat-send {
+  background: var(--accent-green);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+/* ── Mobile Responsive ──────────────────────────────────────── */
+@media(max-width: 1000px) {
+  .asym-grid { grid-template-columns: 1fr; }
+  .chat-card { height: 600px; position: static; }
+  .gauge-split { grid-template-columns: 1fr; }
+}
