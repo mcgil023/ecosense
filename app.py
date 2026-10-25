@@ -494,6 +494,19 @@ def chat_r():
 
         mode = d.get("mode", "live")
         w = get_weather()
+        fc = get_forecast()
+        weather_ctx = {
+            "enabled": bool(w.get("enabled") or fc.get("enabled")),
+            "city": w.get("city", WEATHER_CITY),
+            "temp": w.get("temp"),
+            "humidity": w.get("humidity"),
+            "current_rain": w.get("rain") or 0,
+            "rain_coming": bool(fc.get("rain_coming")),
+            "heat_coming": bool(fc.get("heat_coming")),
+            "total_rain_mm": fc.get("total_rain_mm", 0),
+            "max_temp": fc.get("max_temp"),
+            "summary": fc.get("summary", "Stable weather next 24h"),
+        }
         res = predict(crop, stg, s, w, mode=mode)
         sd = res.get("sensors_used", {})
         cfg = get_crop_cfg(crop, stg)
@@ -506,7 +519,7 @@ def chat_r():
             sensors=sd,
             pred_result=res,
             crop_cfg=cfg,
-            weather=w,
+            weather=weather_ctx,
             lang=lang,
         )
         return jsonify(reply_data)

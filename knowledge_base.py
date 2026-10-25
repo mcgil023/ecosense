@@ -256,8 +256,18 @@ def query_knowledge_base(
     sensors: Dict[str, Any],
     pred_result: Dict[str, Any],
     crop_cfg: Dict[str, Any],
-    lang: str = "en"
+    lang: str = "en",
+    weather: Optional[Dict[str, Any]] = None
 ) -> str:
+    weather = weather or {}
+    city = weather.get("city", "Tiruchirappalli")
+    w_temp = weather.get("temp")
+    w_hum = weather.get("humidity")
+    rain_mm = weather.get("total_rain_mm", 0)
+    rain_coming = bool(weather.get("rain_coming"))
+    heat_coming = bool(weather.get("heat_coming"))
+    w_summary = weather.get("summary", "Stable weather next 24h")
+    w_enabled = bool(weather.get("enabled", False))
     q = query.lower().strip()
     is_ta = (lang == "ta")
     moist = float(sensors.get("soil_moisture", 0))
@@ -296,7 +306,7 @@ def query_knowledge_base(
     if any(k in q for k in ["tds", "salin", "salt", "water safe", "water quality", "உப்புத்தன்மை", "உவர்நீர்"]):
         return get_salinity_guide(tds, max_tds, crop, lang)
 
-    # 4. Irrigation & Pump status (CRITICAL: Simple, truthful, drought-aware)
+    # 4. Irrigation & Pump status (Weather-Aware & Drought-Aware)
     if any(k in q for k in ["irrigat", "pump", "water", "பாசனம்", "தண்ணீர்", "பம்ப்"]):
         if pump_locked:
             reason_en = "High Water Salinity (TDS)" if not tds_safe else "Gas Hazard" if gas_alert else "Safety Lock"
@@ -311,36 +321,75 @@ def query_knowledge_base(
                     f"🛑 **No, do not irrigate right now.** The irrigation pump is locked due to {reason_en}. "
                     f"Safety interlocks protect your {cta} roots from toxic water or hazards. Please resolve the issue before watering."
                 )
-        elif is_drought or irrigate_now:
+        elif rain_coming and rain_mm > 4:
             if is_ta:
                 return (
-                    f"💧 **ஆம், உடனடியாக பாசனம் செய்யவும்!** மண்ணில் ஈரப்பதம் மிகவும் குறைவாக உள்ளது ({cta} பயிருக்கு வறட்சி அழுத்தம் ஏற்பட்டுள்ளது). "
-                    "இப்போது தண்ணீர் பாய்ச்சுவது பயிரை வறட்சியிலிருந்து காப்பாற்றும்."
+                    f"🌦️ **{city} பகுதியில் விரைவில் மழை பெய்ய வாய்ப்புள்ளது ({rain_mm:.1f}மிமீ)!** "
+                    f"மண்ணில் ஈரப்பதம் குறைவாக இருந்தாலும், பம்பை இயக்காமல் மழைநீரை பாசனத்திற்கு பயன்படுத்துவது மின்சாரத்தையும் நீரையும் மிச்சப்படுத்தும்."
                 )
             else:
                 return (
-                    f"💧 **Yes, irrigate your farm right away!** The soil is in drought and critically dry for your {cta} crops. "
-                    "Turning on the water now will rehydrate the roots and prevent yield loss."
+                    f"🌦️ **Rain is coming soon in {city} (around {rain_mm:.1f}mm expected)!** "
+                    f"Even if the soil is dry, keep the pump on standby and let the incoming rain irrigate your {cta} crops naturally to save water and electricity."
                 )
+        elif is_drought or irrigate_now:
+            if heat_coming:
+                if is_ta:
+                    return (
+                        f"💧 **ஆம், உடனடியாக பாசனம் செய்யவும்!** கடுமையான வெப்பம் மற்றும் வறட்சி ({cta} பயிருக்கு நீர் அழுத்தம்) உள்ளதால், "
+                        "ஆவியாவதைத் தடுக்க அதிகாலையிலேயே தண்ணீர் பாய்ச்சி பயிரை பாதுகாக்கவும்."
+                    )
+                else:
+                    return (
+                        f"💧 **Yes, irrigate your farm right away!** High heat and drought are stressing your {cta} crops. "
+                        "Water early in the morning to prevent evaporation and rehydrate the root zone."
+                    )
+            else:
+                if is_ta:
+                    return (
+                        f"💧 **ஆம், உடனடியாக பாசனம் செய்யவும்!** மண்ணில் ஈரப்பதம் மிகவும் குறைவாக உள்ளது ({cta} பயிருக்கு வறட்சி அழுத்தம் ஏற்பட்டுள்ளது). "
+                        "இப்போது தண்ணீர் பாய்ச்சுவது பயிரை வறட்சியிலிருந்து காப்பாற்றும்."
+                    )
+                else:
+                    return (
+                        f"💧 **Yes, irrigate your farm right away!** The soil is critically dry for your {cta} crops and no significant rain is expected. "
+                        "Turning on the water now will rehydrate the roots and prevent yield loss."
+                    )
         elif moist > 88:
             if is_ta:
                 return f"🌿 **பாசனம் தேவையில்லை.** வயலில் ஏற்கனவே நீர் அதிகமாக உள்ளது. வேர் அழுகலைத் தடுக்க அதிகப்படியான தண்ணீரை வடிய வைக்கவும்."
             else:
                 return f"🌿 **No irrigation needed.** The soil already has excess moisture. Ensure proper drainage to avoid root rot."
         else:
-            if is_ta:
-                return f"🌿 **இப்போது பாசனம் தேவையில்லை.** மண்ணில் தேவையான ஈரப்பதம் சீராக உள்ளது. பம்பை நிறுத்தி வைப்பது நல்லது."
+            if rain_coming:
+                if is_ta:
+                    return f"🌿 **இப்போது பாசனம் தேவையில்லை.** மண்ணில் நல்ல ஈரப்பதம் உள்ளது மற்றும் {city} பகுதியில் மழையும் எதிர்பார்க்கப்படுகிறது. வடிகால் வசதியை சரிபார்க்கவும்."
+                else:
+                    return f"🌿 **No need to irrigate right now.** The soil has good moisture, and rain is also expected in {city}. Ensure drainage channels are clear."
             else:
-                return f"🌿 **No need to water right now.** The soil has plenty of healthy moisture, so keeping the pump off will protect root health and save water."
+                if is_ta:
+                    return f"🌿 **இப்போது பாசனம் தேவையில்லை.** மண்ணில் தேவையான ஈரப்பதம் சீராக உள்ளது. பம்பை நிறுத்தி வைப்பது நல்லது."
+                else:
+                    return f"🌿 **No need to water right now.** The soil has plenty of healthy moisture, so keeping the pump off will protect root health and save water."
 
     # 5. Gas / Air Quality
     if any(k in q for k in ["gas", "ammonia", "methane", "air quality", "air safe", "aqi", "காற்று", "வாயு"]):
         return get_gas_safety_guide(sensors, lang)
 
-    # 6. Fertilizers & Nutrients
+    # 6. Fertilizers & Nutrients (Weather-Aware)
     if any(k in q for k in ["fertiliz", "urea", "dap", "potash", "npk", "manure", "உரம்", "சாணம்", "ஊட்டச்சத்து", "யூரியா"]):
         guide = FERTILIZER_GUIDE.get(crop, FERTILIZER_GUIDE["rice"])
-        return guide.get("ta" if is_ta else "en", "")
+        base_resp = guide.get("ta" if is_ta else "en", "")
+        if rain_coming:
+            w_warn = (
+                f"\n\n🌦️ **வானிலை எச்சரிக்கை ({city}):** விரைவில் மழை வர வாய்ப்புள்ளதால் ({rain_mm:.1f}மிமீ), "
+                "உரம் மழைநீரில் அடித்துச் செல்லப்படாமல் இருக்க மழை நின்ற பின் இடவும்."
+                if is_ta else
+                f"\n\n🌦️ **Weather Alert for {city}:** Rain ({rain_mm:.1f}mm) is approaching! "
+                "Delay applying top-dress fertilizers or foliar sprays until after the rain passes so nutrients aren't washed away."
+            )
+            return base_resp + w_warn
+        return base_resp
 
     # 7. General pest/disease question
     if any(k in q for k in ["pest", "disease", "insect", "bug", "worm", "பூச்சி", "நோய்"]):
@@ -373,13 +422,21 @@ def query_knowledge_base(
             else:
                 return f"🌱 **Your {cta} crops are in great health and growing well!** Moisture and soil conditions are ideal."
 
-    # 9. Weather Advice
-    if any(k in q for k in ["weather", "rain", "forecast", "climate", "மழை", "வானிலை"]):
-        wnote = pred_result.get("weather_note", "Stable weather next 24h")
-        if is_ta:
-            return f"🌦️ **வானிலை ஆலோசனை**: {wnote}. மழை எதிர்பார்க்கப்பட்டால் பூச்சிக்கொல்லி தெளிப்பதையும் உரமிடுவதையும் தற்காலிகமாக ஒத்திவைக்கவும்."
+    # 9. Weather Advice & Meteorological Outlook
+    if any(k in q for k in ["weather", "rain", "forecast", "climate", "temperature", "மழை", "வானிலை", "வெப்பநிலை", "வெப்பம்", "குளிர்"]):
+        if w_enabled and w_temp is not None:
+            if is_ta:
+                tip = "மழை எதிர்பார்க்கப்படுவதால் உரம் இடுவதையோ மருந்து தெளிப்பதையோ மழை நின்ற பின் செய்யவும்." if rain_coming else "வெப்பம் அதிகமாக இருப்பதால் அதிகாலையிலேயே பாசனம் செய்யவும்." if heat_coming else "வானிலை சீராக உள்ளதால் வழக்கமான பணிகளை மேற்கொள்ளலாம்."
+                return f"🌦️ **{city} வானிலை நிலவரம்:** தற்போது வெப்பநிலை {w_temp}°C, ஈரப்பதம் {w_hum}%. முன்னறிவிப்பு: {w_summary}. {tip}"
+            else:
+                tip = "Rain is expected soon, so hold off on foliar sprays and fertilizer top-dressing to prevent runoff." if rain_coming else "High heat ahead, so water crops in the early morning to reduce moisture evaporation." if heat_coming else "Weather conditions are stable and favorable for regular farm maintenance."
+                return f"🌦️ **Weather in {city}:** Currently {w_temp}°C with {w_hum}% humidity. Forecast: {w_summary}. {tip}"
         else:
-            return f"🌦️ **Weather Advisory**: {wnote}. If heavy rainfall is approaching, hold off on fertilizer top-dressing to prevent nutrient runoff."
+            wnote = pred_result.get("weather_note", "Stable weather next 24h")
+            if is_ta:
+                return f"🌦️ **வானிலை ஆலோசனை ({city})**: {wnote}. மழை எதிர்பார்க்கப்பட்டால் பூச்சிக்கொல்லி தெளிப்பதையும் உரமிடுவதையும் தற்காலிகமாக ஒத்திவைக்கவும்."
+            else:
+                return f"🌦️ **Weather Advisory ({city})**: {wnote}. If heavy rainfall is approaching, hold off on fertilizer top-dressing to prevent nutrient runoff."
 
     # 10. General Conversational Fallback (Simple, non-value-based)
     if is_ta:

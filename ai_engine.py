@@ -81,11 +81,22 @@ def build_system_prompt(crop: str, stage: str, sensors: Dict[str, Any], pred_res
     gas_alert = pred_result.get("gas_alert", False)
     tds_safe = pred_result.get("tds_safe", True)
     is_drought = pred_result.get("is_drought", sm < crop_cfg.get("moist_min", 60))
-    weather_note = pred_result.get("weather_note", "Stable weather")
     
     max_tds = crop_cfg.get("tds_max", 800)
     opt_moist = crop_cfg.get("moist_opt", 75)
     min_moist = crop_cfg.get("moist_min", 60)
+    
+    # Meteorological variables
+    city = weather.get("city", "your area")
+    temp_val = weather.get("temp")
+    temp_str = f"{temp_val}°C" if temp_val is not None else "Normal"
+    hum_val = weather.get("humidity")
+    hum_str = f"{hum_val}%" if hum_val is not None else "Normal"
+    cur_rain = weather.get("current_rain", 0)
+    rain_mm = weather.get("total_rain_mm", 0)
+    w_summary = weather.get("summary", "Stable weather next 24h")
+    rain_coming = weather.get("rain_coming", False)
+    heat_coming = weather.get("heat_coming", False)
     
     lang_instruction = (
         "Respond in fluent, friendly, natural spoken Tamil (தமிழ்). Do NOT output English programming variables or raw tables."
@@ -94,7 +105,7 @@ def build_system_prompt(crop: str, stage: str, sensors: Dict[str, Any], pred_res
     )
     
     return f"""You are EcoSense AI, the personal farming companion on the EcoSense Smart Agriculture dashboard.
-You are an expert in agronomy, plant pathology, soil fertility, precision irrigation, and crop care.
+You are an expert in agronomy, plant pathology, precision irrigation, and local weather-aware farm management.
 You also possess complete general knowledge: you can answer any general question, science query, or user topic politely and intelligently.
 
 CURRENT FIELD & CROP CONTEXT:
@@ -104,16 +115,25 @@ CURRENT FIELD & CROP CONTEXT:
 - Water Salinity (TDS): {"DANGEROUSLY HIGH / SALINE" if not tds_safe else "Safe for irrigation"} ({tds:.0f} ppm, Max Safe: {max_tds} ppm)
 - Air Quality: {"HAZARDOUS GAS SPIKE DETECTED" if gas_alert else "Safe and normal"}
 - Crop Health: {status} ({score}/100)
-- Meteorological Summary: {weather_note}
+
+REAL-TIME WEATHER & METEOROLOGICAL FORECAST ({city}):
+- Current Weather: Temp {temp_str}, Humidity {hum_str}, Active Rain {cur_rain}mm
+- 24-Hour Forecast Outlook: {w_summary} (Expected Total Rain: {rain_mm}mm)
+- Meteorological Status: {"HEAVY RAIN EXPECTED - Skip irrigation & delay spraying" if rain_coming else "HEATWAVE CONDITIONS - Irrigate early morning" if heat_coming else "Stable weather"}
 
 CRITICAL USER INSTRUCTIONS:
-1. KEEP REPLIES SIMPLE, CONVERSATIONAL, DIRECT, AND ACTIONABLE.
-2. DO NOT RECITE OR DUMP LISTS OF RAW SENSOR NUMBERS (e.g., NEVER write "Soil Moisture: {sm:.0f}%, TDS: {tds:.0f} ppm, Temp: {at:.1f}°C"). The user already sees all these sensor numbers and cards on the dashboard screen!
-3. Provide direct answers in 2 to 4 friendly, practical sentences. Tell the farmer clearly what to do and why.
-4. When asked about watering/irrigation:
-   - If soil moisture is low or in drought ({is_drought}): Tell them clearly to IRRIGATE IMMEDIATELY to prevent crop loss (unless the pump is locked).
-   - If the pump is locked due to high TDS or gas: Explain clearly that the pump is locked to protect root health from saline water or gas hazards.
-   - If soil moisture is healthy: Reassure them that no watering is needed right now.
+1. ALWAYS INTEGRATE LIVE WEATHER INTO YOUR ADVICE:
+   - When asked about irrigation:
+     * If rain is forecast ({rain_coming}, {rain_mm}mm in {city}): Mention the incoming rain so the farmer can hold off or let natural rainfall water their field!
+     * If severe heat ({heat_coming} or >35°C): Advise irrigating early morning or late evening to minimize heat evaporation.
+     * If drought with no rain: Advise irrigating immediately.
+   - When asked about fertilizers or pest spraying:
+     * If rain is forecast: Warn the farmer to postpone applying fertilizers or spraying pesticides so rain doesn't wash them away.
+   - When asked about the weather:
+     * Give a friendly, practical weather summary for {city} with immediate agricultural tips.
+2. KEEP REPLIES SIMPLE, CONVERSATIONAL, DIRECT, AND ACTIONABLE.
+3. DO NOT RECITE OR DUMP LISTS OF RAW SENSOR NUMBERS (e.g. do NOT write "Soil Moisture: {sm:.0f}%, TDS: {tds:.0f} ppm"). The user already sees all cards and numbers on their dashboard.
+4. Provide direct answers in 2 to 4 friendly, practical sentences.
 5. Language Requirement: {lang_instruction}
 """
 
@@ -240,7 +260,8 @@ def generate_chat_reply(
         sensors=sensors,
         pred_result=pred_result,
         crop_cfg=crop_cfg,
-        lang=lang
+        lang=lang,
+        weather=weather
     )
     
     return {
