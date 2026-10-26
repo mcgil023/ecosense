@@ -114,14 +114,23 @@ POST /predict
   },
   "inference_source": "ml",
   "agronomic_physics": {
-    "fao56_kc_factor": 1.15,
+    "et_c_mm_day": 5.49,
     "etc_crop_water_demand_mm_day": 5.49,
-    "et0_reference_mm_day": 4.77,
-    "vpd_kpa": 5.53
+    "vpd_kpa": 5.53,
+    "kc_factor": 1.15,
+    "fao56_kc_factor": 1.15,
+    "et0_reference_mm_day": 4.77
   },
   "grid_power_status": {
+    "three_phase_active": true,
     "three_phase_available": true,
-    "active_slot": "Slot 1 (06:00-12:00)"
+    "current_slot": "Slot 1 (06:00-12:00)",
+    "active_slot": "Slot 1 (06:00-12:00)",
+    "next_window_ist": "21:00 - 03:00 IST"
+  },
+  "borewell_protection": {
+    "dry_run_detected": false,
+    "alert": "Normal Flow"
   },
   "factors_breakdown": {
     "moisture_penalty": 40.0,

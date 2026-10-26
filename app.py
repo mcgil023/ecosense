@@ -237,7 +237,16 @@ def get_grid_power_status(current_time=None):
     slot_2 = hour >= 21 or hour < 3
     is_available = slot_1 or slot_2
     active_slot = "Slot 1 (06:00-12:00)" if slot_1 else "Slot 2 (21:00-03:00)" if slot_2 else "Off-Peak (Single Phase Only)"
-    return is_available, active_slot
+    if slot_1:
+        next_window = "21:00 - 03:00 IST"
+    elif slot_2:
+        next_window = "06:00 - 12:00 IST"
+    elif 12 <= hour < 21:
+        next_window = "21:00 - 03:00 IST"
+    else:
+        next_window = "06:00 - 12:00 IST"
+    return is_available, active_slot, next_window
+
 
 
 # ── Weather ─────────────────────────────────────────────────────
@@ -429,7 +438,7 @@ def predict(crop, stage, sensors, w, mode="live", device_id="default"):
         pump_on = True
 
     # Rural Three-Phase Agricultural Grid Power Scheduling
-    grid_power_available, active_grid_slot = get_grid_power_status()
+    grid_power_available, active_grid_slot, next_window_ist = get_grid_power_status()
 
     # Generate clear agronomic advisory message:
     if borewell_dry_run:
@@ -486,14 +495,23 @@ def predict(crop, stage, sensors, w, mode="live", device_id="default"):
         "sensors_used": sd,
         "inference_source": "ml" if ml else "heuristic",
         "agronomic_physics": {
-            "fao56_kc_factor": cfg.get("kc", 1.0),
+            "et_c_mm_day": etc_info["etc_crop_demand_mm_day"],
             "etc_crop_water_demand_mm_day": etc_info["etc_crop_demand_mm_day"],
-            "et0_reference_mm_day": etc_info["et0_reference_mm_day"],
-            "vpd_kpa": etc_info["vapor_pressure_deficit_kpa"]
+            "vpd_kpa": etc_info["vapor_pressure_deficit_kpa"],
+            "kc_factor": cfg.get("kc", 1.0),
+            "fao56_kc_factor": cfg.get("kc", 1.0),
+            "et0_reference_mm_day": etc_info["et0_reference_mm_day"]
         },
         "grid_power_status": {
+            "three_phase_active": grid_power_available,
             "three_phase_available": grid_power_available,
-            "active_slot": active_grid_slot
+            "current_slot": active_grid_slot,
+            "active_slot": active_grid_slot,
+            "next_window_ist": next_window_ist
+        },
+        "borewell_protection": {
+            "dry_run_detected": bool(borewell_dry_run),
+            "alert": "🚨 Cavitation / Silt Spike >40%" if borewell_dry_run else "Normal Flow"
         },
         "factors_breakdown": heur_res["factors_breakdown"]
     }

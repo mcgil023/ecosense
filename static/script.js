@@ -15,6 +15,7 @@ const PRESETS = {
   saline:  { soil_moisture: 68, tds_ppm: 1450, air_temp_c: 29, soil_temp_c: 25, humidity_pct: 60, mq135_ammonia: 55, mq4_methane: 180, mq7_co: 10, mq2_smoke: 20 },
   gas:     { soil_moisture: 70, tds_ppm: 400, air_temp_c: 30, soil_temp_c: 26, humidity_pct: 70, mq135_ammonia: 450, mq4_methane: 2200, mq7_co: 180, mq2_smoke: 250 },
   heat:    { soil_moisture: 48, tds_ppm: 360, air_temp_c: 42, soil_temp_c: 38, humidity_pct: 35, mq135_ammonia: 70, mq4_methane: 210, mq7_co: 15, mq2_smoke: 25 },
+  cavitation: { soil_moisture: 35, tds_ppm: 950, air_temp_c: 34, soil_temp_c: 30, humidity_pct: 45, mq135_ammonia: 50, mq4_methane: 200, mq7_co: 10, mq2_smoke: 20 },
 };
 
 function toggleTheme() {
@@ -153,6 +154,62 @@ function renderPredictions(p) {
   if (tm) tm.textContent = p.trend_moisture || 'stable';
   if (tw) tw.textContent = p.tds_safe ? 'Safe' : 'Saline';
   if (ta) ta.textContent = `${p.field_aqi || 95} (${p.field_aqi_label || 'Good'})`;
+
+  // ── Enterprise Agronomic Telemetry Badges ───────────────────
+  // 1. Agronomic Physics: et_c_mm_day, vpd_kpa, kc_factor
+  const agri = p.agronomic_physics || {};
+  const bEtcVal = gid('b-etc-val');
+  const bKcVal = gid('b-kc-val');
+  const bVpdVal = gid('b-vpd-val');
+  const etcVal = agri.et_c_mm_day !== undefined ? agri.et_c_mm_day : agri.etc_crop_water_demand_mm_day;
+  const kcVal = agri.kc_factor !== undefined ? agri.kc_factor : agri.fao56_kc_factor;
+  if (bEtcVal) bEtcVal.textContent = etcVal !== undefined ? etcVal : '--';
+  if (bKcVal) bKcVal.textContent = kcVal !== undefined ? kcVal : '--';
+  if (bVpdVal) bVpdVal.textContent = agri.vpd_kpa !== undefined ? agri.vpd_kpa : '--';
+
+  // 2. Rural 3-Phase Grid Power: three_phase_active, current_slot, next_window_ist
+  const grid = p.grid_power_status || {};
+  const bGridStatus = gid('b-grid-status');
+  const bGridSlot = gid('b-grid-slot');
+  const bGridNext = gid('b-grid-next');
+  const is3Phase = grid.three_phase_active ?? grid.three_phase_available ?? false;
+  if (bGridStatus) {
+    bGridStatus.textContent = is3Phase ? '3-PHASE ON' : 'OFF-PEAK';
+    bGridStatus.className = 'badge-tag ' + (is3Phase ? 'tag-active' : 'tag-offpeak');
+  }
+  if (bGridSlot) {
+    bGridSlot.textContent = grid.current_slot || grid.active_slot || 'Off-Peak';
+    bGridSlot.style.color = is3Phase ? 'var(--accent-green)' : 'var(--text-muted)';
+  }
+  if (bGridNext) {
+    bGridNext.textContent = grid.next_window_ist || '06:00 - 12:00 IST';
+  }
+
+  // 3. Borewell Protection: dry_run_detected, alert
+  const bw = p.borewell_protection || {};
+  const bBwStatus = gid('b-borewell-status');
+  const bBwAlert = gid('b-borewell-alert');
+  const bBwSub = gid('b-borewell-sub');
+  const badgeBwCard = gid('badge-borewell');
+  const isDryRun = Boolean(bw.dry_run_detected || (p.pump_locked && p.advisory && p.advisory.includes('Borewell')));
+  if (bBwStatus) {
+    bBwStatus.textContent = isDryRun ? 'INTERLOCK' : 'SAFE';
+    bBwStatus.className = 'badge-tag ' + (isDryRun ? 'tag-alarm' : 'tag-safe');
+  }
+  if (bBwAlert) {
+    bBwAlert.textContent = bw.alert || (isDryRun ? '🚨 Cavitation Spike >40%' : 'Normal Flow');
+    bBwAlert.style.color = isDryRun ? 'var(--accent-red)' : 'var(--accent-green)';
+  }
+  if (bBwSub) {
+    bBwSub.textContent = isDryRun ? 'Pump Cut Off • Silt/Air Intrusion' : 'Motor Burnout Safe';
+  }
+  if (badgeBwCard) {
+    if (isDryRun) {
+      badgeBwCard.classList.add('badge-alarm-active');
+    } else {
+      badgeBwCard.classList.remove('badge-alarm-active');
+    }
+  }
 }
 
 async function loadWeather() {

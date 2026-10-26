@@ -42,6 +42,7 @@
     <button class="sim-btn" onclick="applyPreset('saline')">&#9656; High TDS</button>
     <button class="sim-btn" onclick="applyPreset('gas')">&#9656; Gas Alert</button>
     <button class="sim-btn" onclick="applyPreset('heat')">&#9656; Heatwave</button>
+    <button class="sim-btn" onclick="applyPreset('cavitation')">&#9656; Cavitation</button>
   </div>
   <div class="mode-toggles">
     <button id="btn-live" class="mode-btn" onclick="setMode('live')">&#9679; Live</button>
@@ -135,6 +136,54 @@
         <span class="trend-key" id="tk-moist">Moisture:</span><span class="trend-val" id="t-moist">--</span>
         <span class="trend-key" id="tk-water">Water:</span><span class="trend-val" id="t-tds">--</span>
         <span class="trend-key" id="tk-air">Air Quality:</span><span class="trend-val" id="t-aqi">--</span>
+      </div>
+
+      <!-- Enterprise Agronomic Badges -->
+      <div class="panel-eyebrow" id="pt-badges" style="margin-top: 14px;">ENTERPRISE TELEMETRY &amp; GRID INTERLOCKS</div>
+      <div class="enterprise-badges-grid">
+        <!-- Badge 1: FAO-56 Agronomic Physics -->
+        <div class="badge-card badge-physics" id="badge-physics">
+          <div class="badge-header">
+            <span class="badge-title-wrap"><span class="badge-icon">🌾</span> <span class="badge-title">FAO-56 CROP DEMAND</span></span>
+            <span class="badge-tag tag-physics" id="b-etc-status">PHYSICS ETc</span>
+          </div>
+          <div class="badge-primary">
+            <span class="badge-main-metric" id="b-etc-val">--</span>
+            <span class="badge-metric-unit">mm/day ETc</span>
+          </div>
+          <div class="badge-meta-row">
+            <span class="badge-meta-pill">Kc: <b id="b-kc-val">--</b></span>
+            <span class="badge-meta-pill">VPD: <b id="b-vpd-val">--</b> kPa</span>
+          </div>
+        </div>
+
+        <!-- Badge 2: Rural 3-Phase Grid Power -->
+        <div class="badge-card badge-grid" id="badge-grid">
+          <div class="badge-header">
+            <span class="badge-title-wrap"><span class="badge-icon">⚡</span> <span class="badge-title">3-PHASE GRID POWER</span></span>
+            <span class="badge-tag" id="b-grid-status">--</span>
+          </div>
+          <div class="badge-primary">
+            <span class="badge-main-slot" id="b-grid-slot">--</span>
+          </div>
+          <div class="badge-meta-row">
+            <span class="badge-meta-pill">Next Window: <b id="b-grid-next">--</b></span>
+          </div>
+        </div>
+
+        <!-- Badge 3: Borewell Dry-Run Protection -->
+        <div class="badge-card badge-borewell" id="badge-borewell">
+          <div class="badge-header">
+            <span class="badge-title-wrap"><span class="badge-icon">🛡️</span> <span class="badge-title">BOREWELL PROTECTION</span></span>
+            <span class="badge-tag" id="b-borewell-status">SAFE</span>
+          </div>
+          <div class="badge-primary">
+            <span class="badge-main-alert" id="b-borewell-alert">Normal Flow</span>
+          </div>
+          <div class="badge-meta-row">
+            <span class="badge-meta-pill" id="b-borewell-sub">Motor Burnout Safe</span>
+          </div>
+        </div>
       </div>
     </section>
   </div>

@@ -191,13 +191,25 @@ assert "fao56_kc_factor" in agri
 assert "etc_crop_water_demand_mm_day" in agri
 assert "et0_reference_mm_day" in agri
 assert "vpd_kpa" in agri
-assert agri["fao56_kc_factor"] == 1.15  # rice tillering Kc
+assert "et_c_mm_day" in agri
+assert "kc_factor" in agri
+assert agri["kc_factor"] == 1.15  # rice tillering Kc
 
 # Assert Grid Power Status Block
 assert "grid_power_status" in p, "grid_power_status block missing from /predict"
 grid = p["grid_power_status"]
 assert "three_phase_available" in grid
+assert "three_phase_active" in grid
 assert "active_slot" in grid
+assert "current_slot" in grid
+assert "next_window_ist" in grid
+
+# Assert Borewell Protection Block
+assert "borewell_protection" in p, "borewell_protection block missing from /predict"
+bw = p["borewell_protection"]
+assert "dry_run_detected" in bw
+assert "alert" in bw
+
 
 # Assert Factors Breakdown Block (Explainable ML/Heuristics)
 assert "factors_breakdown" in p, "factors_breakdown block missing from /predict"
