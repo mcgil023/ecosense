@@ -1,7 +1,47 @@
 {
-  "rice":      {"tds_max":700,"temp_min":20,"temp_max":35,"stages":{"germination":{"moist_min":70,"moist_opt":90,"critical":false},"tillering":{"moist_min":65,"moist_opt":85,"critical":true},"panicle_init":{"moist_min":70,"moist_opt":90,"critical":true},"flowering":{"moist_min":75,"moist_opt":95,"critical":true},"grain_filling":{"moist_min":65,"moist_opt":85,"critical":true},"maturity":{"moist_min":45,"moist_opt":65,"critical":false}}},
-  "maize":     {"tds_max":800,"temp_min":18,"temp_max":35,"stages":{"germination":{"moist_min":60,"moist_opt":80,"critical":false},"vegetative":{"moist_min":55,"moist_opt":75,"critical":false},"tasseling":{"moist_min":65,"moist_opt":85,"critical":true},"silking":{"moist_min":70,"moist_opt":90,"critical":true},"grain_filling":{"moist_min":60,"moist_opt":80,"critical":true},"maturity":{"moist_min":40,"moist_opt":60,"critical":false}}},
-  "groundnut": {"tds_max":1000,"temp_min":22,"temp_max":38,"stages":{"germination":{"moist_min":55,"moist_opt":75,"critical":false},"vegetative":{"moist_min":50,"moist_opt":70,"critical":false},"flowering":{"moist_min":60,"moist_opt":80,"critical":true},"pegging":{"moist_min":65,"moist_opt":85,"critical":true},"pod_filling":{"moist_min":60,"moist_opt":80,"critical":true},"maturity":{"moist_min":40,"moist_opt":60,"critical":false}}},
-  "sugarcane": {"tds_max":1200,"temp_min":20,"temp_max":40,"stages":{"germination":{"moist_min":65,"moist_opt":85,"critical":false},"tillering":{"moist_min":60,"moist_opt":80,"critical":false},"grand_growth":{"moist_min":70,"moist_opt":90,"critical":true},"maturation":{"moist_min":45,"moist_opt":65,"critical":false}}},
-  "coconut":   {"tds_max":1500,"temp_min":22,"temp_max":38,"stages":{"nursery":{"moist_min":60,"moist_opt":80,"critical":false},"young_palm":{"moist_min":55,"moist_opt":75,"critical":true},"bearing":{"moist_min":50,"moist_opt":70,"critical":true},"mature_bearing":{"moist_min":45,"moist_opt":65,"critical":false}}}
+  "rice": {
+    "tds_max": 750,
+    "stages": {
+      "germination": { "moist_min": 70, "moist_opt": 90, "kc": 1.05, "critical": false },
+      "tillering":   { "moist_min": 65, "moist_opt": 85, "kc": 1.15, "critical": true },
+      "panicle":     { "moist_min": 70, "moist_opt": 90, "kc": 1.35, "critical": true },
+      "ripening":    { "moist_min": 45, "moist_opt": 65, "kc": 0.90, "critical": false }
+    }
+  },
+  "maize": {
+    "tds_max": 800,
+    "stages": {
+      "emergence":  { "moist_min": 40, "moist_opt": 60, "kc": 0.40, "critical": false },
+      "vegetative": { "moist_min": 50, "moist_opt": 70, "kc": 0.80, "critical": false },
+      "flowering":  { "moist_min": 60, "moist_opt": 80, "kc": 1.20, "critical": true },
+      "maturity":   { "moist_min": 35, "moist_opt": 55, "kc": 0.60, "critical": false }
+    }
+  },
+  "groundnut": {
+    "tds_max": 700,
+    "stages": {
+      "vegetative": { "moist_min": 45, "moist_opt": 65, "kc": 0.50, "critical": false },
+      "flowering":  { "moist_min": 60, "moist_opt": 75, "kc": 1.05, "critical": true },
+      "pod_formation": { "moist_min": 60, "moist_opt": 75, "kc": 1.15, "critical": true },
+      "maturity":   { "moist_min": 35, "moist_opt": 50, "kc": 0.60, "critical": false }
+    }
+  },
+  "sugarcane": {
+    "tds_max": 900,
+    "stages": {
+      "germination": { "moist_min": 55, "moist_opt": 75, "kc": 0.50, "critical": false },
+      "tillering":   { "moist_min": 65, "moist_opt": 85, "kc": 1.25, "critical": true },
+      "grand_growth":{ "moist_min": 70, "moist_opt": 90, "kc": 1.30, "critical": true },
+      "maturity":    { "moist_min": 40, "moist_opt": 60, "kc": 0.75, "critical": false }
+    }
+  },
+  "coconut": {
+    "tds_max": 1200,
+    "stages": {
+      "seedling":     { "moist_min": 50, "moist_opt": 70, "kc": 0.60, "critical": false },
+      "young":        { "moist_min": 55, "moist_opt": 75, "kc": 0.85, "critical": false },
+      "bearing":      { "moist_min": 60, "moist_opt": 80, "kc": 1.05, "critical": true },
+      "dry_season":   { "moist_min": 65, "moist_opt": 85, "kc": 1.15, "critical": true }
+    }
+  }
 }
